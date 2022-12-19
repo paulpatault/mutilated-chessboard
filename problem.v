@@ -1,6 +1,6 @@
 (* Require Import PeanoNat. Require Arith_base. *)
 
-Require Import Arith Nat.
+Require Import Arith Nat Bool.
 
 (* Inductive vect (A : Set) : nat -> Set :=
   | vnil : vect A 0
@@ -43,20 +43,17 @@ Definition mset := set coord.
 
 Print ListSet.
 
-Definition eq_dec (c1 c2 : coord) := c1.(x) = c2.(x) /\ c1.(y) = c2.(y).
+Definition eq_coord (c1 c2 : coord) := (c1.(x) =? c2.(x)) && (c1.(y) =? c2.(y)).
 
-Lemma eq_decl : forall n m : coord, {n = m} + {n <> m}.
-Admitted.
-
-Print eq_dec.
+Infix "==" := eq_coord (at level 39, no associativity).
 
 (**
-   ll n m = { { 1; m } .. { n; m } }
+   ll n m = [ { 1; m } .. { n; m } ]
  *)
-Fixpoint ll (n m:nat) : mset :=
+Fixpoint mk_line (n m:nat) : list coord :=
   match n with
-  | 0 => empty_set coord
-  | S n => set_add eq_decl {| x := n; y := m |} (ll n m)
+  | 0 => []
+  | S n => {| x := n; y := m |} :: (mk_line n m)
   end.
 
 (**
@@ -65,17 +62,35 @@ Fixpoint ll (n m:nat) : mset :=
 
 Fixpoint plateau (n:nat) :=
   match n with
-  | 0 => empty_set coord
+  | 0 => []
   | S n =>
-      set_union eq_decl (ll 8 n) (plateau n)
+      (mk_line 8 n) ++ (plateau n)
   end.
 
-Definition plateau8 := plateau 8.
+Definition plateau8 : list coord := plateau 8.
+
+Eval compute in plateau 8.
+
+Check List.filter.
+
+Print Bool.
+
+Definition neq07 (e:coord) : bool :=
+    e == {| x := 0; y := 0 |} ||
+    e == {| x := 7; y := 7 |}.
 
 Definition plateau_sc :=
-  let m00 := set_remove eq_decl ({| x := 0; y := 0 |}) plateau8 in
-  set_remove eq_decl ({| x := 7; y := 7 |}) m00.
+  List.filter (fun e => negb (neq07 e)) plateau8.
 
-Eval compute in set_mem eq_decl ({| x := 0; y := 0 |}) plateau8.
+Fixpoint mem {A : Set} (eq : A -> A -> bool) (e : A) (l : list A) : bool :=
+  match l with
+  | [] => false
+  | h::t => if eq h e then true else mem eq e t
+  end.
 
-(* TODO : changer la def de plateau : set -> matrix (= vect vect) ? *)
+(*
+   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau8.   (* true *)
+   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_sc. (* false *)
+ *)
+
+
