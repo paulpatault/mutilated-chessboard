@@ -274,6 +274,7 @@ Proof.
   lia.
 Qed.
 
+(* changer arg2 pour [list mem c p] *)
 Lemma retire_case_bl (p:plateau) (c:coord) : case_blanche c -> 0 < card_bl p -> card_bl (p \ c) + 1 = card_bl p.
 Proof.
   induction p.
