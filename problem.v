@@ -188,6 +188,12 @@ Fixpoint mem {A : Set} (eq : A -> A -> bool) (e : A) (l : list A) : bool :=
   | h::t => if eq h e then true else mem eq e t
   end.
 
+Fixpoint mem_prop {A : Set} (eq : A -> A -> bool) (e : A) (l : list A) : Prop :=
+  match l with
+  | [] => False
+  | h::t => if eq h e then True else mem_prop eq e t
+  end.
+
 Fixpoint retire (p:plateau) (e:coord) :=
   match p with
   | [] => []
@@ -274,11 +280,15 @@ Proof.
   lia.
 Qed.
 
+
+Print List.
 (* changer arg2 pour [list mem c p] *)
-Lemma retire_case_bl (p:plateau) (c:coord) : case_blanche c -> 0 < card_bl p -> card_bl (p \ c) + 1 = card_bl p.
+Lemma retire_case_bl (p:plateau) (c:coord) : case_blanche c ->
+  (* 0 < card_bl p *)
+mem_prop eq_coord c p -> card_bl (p \ c) + 1 = card_bl p.
 Proof.
   induction p.
-  { intros. simpl in *. apply Nat.lt_neq in H0. contradiction. }
+  { intros. simpl in *. (* apply Nat.lt_neq in H0. *) contradiction. }
   { intros.
     destruct (bl_or_no a); simpl in *.
     + unfold case_blanche in H1.
@@ -288,6 +298,7 @@ Proof.
       apply Nat.succ_inj_wd.
       assert ((a == c) = true \/ (a == c) = false).
       - left.
+        admit.
       - destruct H2; rewrite H2.
         * reflexivity.
         * rewrite Nat.even_spec in H1.
@@ -314,6 +325,8 @@ Proof.
         rewrite (remove_bad_color a p).
         ++ apply aux_pred_succ.
            apply odd_to_not_even in H1.
+           apply IHp in H.
+           +++
            rewrite H1 in H0.
            assumption.
         ++ unfold case_noire.
