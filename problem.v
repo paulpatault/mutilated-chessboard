@@ -1,14 +1,8 @@
-Require Import Arith Nat Bool.
-Require Import List.
+Require Import Arith Nat Bool List Lia.
 Import ListNotations.
 
+
 Record coord := mkCoord { x : nat; y : nat }.
-(* Definition eq_coord (c1 c2 : coord) := (c1.(x) =? c2.(x)) && (c1.(y) =? c2.(y)). *)
-
-(* Infix "==" := eq_coord (at level 39, no associativity). *)
-
-
-(* Lemma eq_dec : forall y:A, x = y \/ x <> y. *)
 
 Definition plateau := list coord.
 
@@ -20,21 +14,19 @@ Definition neg_couleur c :=
   | Noir => Blanc
   end.
 
-
-
 Inductive domino :=
   | Hauteur : coord -> domino
   | Largeur : coord -> domino.
 
 Definition droite  (c : coord) := {| x := c.(x) + 1; y := c.(y) |}.
-Definition gauche  (c : coord) := {| x := c.(x) - 1; y := c.(y) |}.
-Definition dessus  (c : coord) := {| x := c.(x)    ; y := c.(y) - 1 |}.
+(* Definition gauche  (c : coord) := {| x := c.(x) - 1; y := c.(y) |}. *)
+(* Definition dessus  (c : coord) := {| x := c.(x)    ; y := c.(y) - 1 |}. *)
 Definition dessous (c : coord) := {| x := c.(x)    ; y := c.(y) + 1 |}.
 
-Definition case_prise : domino -> coord := fun d =>
+Definition case_prise : domino -> coord * coord := fun d =>
   match d with
-  | Hauteur c => dessous c
-  | Largeur c => droite c
+  | Hauteur c => (c, dessous c)
+  | Largeur c => (c, droite c)
   end.
 
 Definition case_blanche (c : coord) : Prop := Nat.Even (c.(x) + c.(y)).
@@ -46,22 +38,80 @@ Definition couleur_case (cc : couleur) (c : coord) : Prop :=
   | Noir  => Nat.Odd  (c.(x) + c.(y))
   end.
 
-(* Lemma eqeq_refl (c1 c2 : coord) : c1 == c2 -> c2 == c1. *)
-Lemma ncolor_neq (c1 c2 : coord) : case_noire c1 -> case_blanche c2 -> c1 <> c2.
+Definition est_blanche (c : coord) : bool := even (c.(x) + c.(y)).
+Definition est_noire   (c : coord) : bool := odd (c.(x) + c.(y)).
+
+Lemma dessous_inv_col col c : couleur_case col c <-> couleur_case (neg_couleur col) (dessous c).
 Proof.
-  intros Hn1 Hb2 Heq.
-  apply (Nat.Even_Odd_False (x c2 + y c2)).
-  - assumption.
-  - rewrite <- Heq. assumption.
+  split.
+  { case col; unfold couleur_case; intro; simpl; rewrite Nat.add_assoc; rewrite Nat.add_1_r.
+    - apply Nat.odd_spec.
+      rewrite Nat.odd_succ.
+      apply Nat.even_spec.
+      assumption.
+    - apply Nat.even_spec.
+      rewrite Nat.even_succ.
+      apply Nat.odd_spec.
+      assumption.
+  }
+  { case col; unfold couleur_case; intro; simpl in *; rewrite Nat.add_assoc in H; rewrite Nat.add_1_r in H.
+    - apply Nat.odd_spec in H.
+      rewrite Nat.odd_succ in H.
+      apply Nat.even_spec.
+      assumption.
+    - apply Nat.even_spec in H.
+      rewrite Nat.even_succ in H.
+      apply Nat.odd_spec.
+      assumption.
+  }
 Qed.
 
-
-Lemma eq_coord_color (c1 c2 : coord) :
-  c1 = c2 ->
-  (case_blanche c1 <-> case_blanche c2) /\ (case_noire c1 <-> case_noire c2).
+Lemma droite_inv_col col c : couleur_case col c -> couleur_case (neg_couleur col) (droite c).
 Proof.
-  intro.
-  split; split; rewrite H; trivial.
+  case col; unfold couleur_case; intro; simpl.
+  - rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    apply Nat.odd_spec.
+    rewrite Nat.add_1_r.
+    rewrite Nat.odd_succ.
+    apply Nat.even_spec.
+    rewrite Nat.add_comm.
+    assumption.
+  - rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    apply Nat.even_spec.
+    rewrite Nat.add_1_r.
+    rewrite Nat.even_succ.
+    apply Nat.odd_spec.
+    rewrite Nat.add_comm.
+    assumption.
+Qed.
+
+Lemma domino_bicolor (d : domino) :
+  (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
+  (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
+Proof.
+  split; destruct d; unfold case_prise; simpl; intro. 
+  - eapply (dessous_inv_col Blanc).
+    unfold couleur_case.
+    unfold case_blanche in H.
+    assumption.
+  - eapply (droite_inv_col Blanc).
+    unfold couleur_case.
+    unfold case_blanche in H.
+    assumption.
+  - eapply (dessous_inv_col Noir).
+    unfold couleur_case.
+    unfold case_noire in H.
+    assumption.
+  - eapply (droite_inv_col Noir).
+    unfold couleur_case.
+    unfold case_noire in H.
+    assumption.
 Qed.
 
 Fixpoint card_bl (p : plateau) :=
@@ -215,12 +265,7 @@ Eval compute in plateau_sc.
  *)
 
 Definition pose_domino (d:domino) (p:plateau) : plateau :=
-  match d with
-  | Hauteur c =>
-      p \ c \ (case_prise d)
-  | Largeur c =>
-      p \ c \ (case_prise d)
-  end.
+  p \ fst (case_prise d) \ snd (case_prise d).
 
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
 Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
@@ -392,21 +437,179 @@ Proof.
   }
 Qed.
 
+Lemma retire_case_neg1 (a : coord) (p : plateau) :
+  case_noire a -> card_bl (p \ a) = card_bl p.
+Proof.
+  induction p.
+  { auto. }
+  { intros.
+    simpl.
+    case (eq_coord a a0); intro.
+    - rewrite IHp; try assumption.
+      rewrite e in H.
+      unfold case_noire in H.
+      apply Nat.odd_spec in H.
+      rewrite odd_to_not_even in H.
+      rewrite H.
+      trivial.
+    - simpl.
+      case (even (x a0 + y a0)).
+      + apply Nat.succ_inj_wd.
+        apply IHp.
+        assumption.
+      + apply IHp.
+        assumption.
+  }
+Qed.
+
+Lemma retire_case_neg2 (a : coord) (p : plateau) : case_blanche a -> card_no (p \ a) = card_no p.
+Proof.
+  induction p.
+  { auto. }
+  { intros.
+    simpl.
+    case (eq_coord a a0); intro.
+    - rewrite IHp; try assumption.
+      rewrite e in H.
+      unfold case_blanche in H.
+      apply Nat.even_spec in H.
+      apply even_to_not_odd in H.
+      rewrite H.
+      trivial.
+    - simpl.
+      case (odd (x a0 + y a0)).
+      + apply Nat.succ_inj_wd.
+        apply IHp.
+        assumption.
+      + apply IHp.
+        assumption.
+  }
+Qed.
+
+Lemma remove_assoc (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
+Proof.
+  induction p; auto.
+  simpl.
+Admitted.
+
 Lemma invariant : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
-  card_bl p = card_bl p' + 1 /\
-  card_no p = card_no p' + 1.
+  card Blanc p = card Blanc p' + 1 /\
+  card Noir p  = card Noir  p' + 1.
 Proof.
   intros.
+  case (domino_bicolor d).
   split.
   {
     destruct d; simpl in *.
-    {
-      destruct (bl_or_no c).
-      + rewrite H.
+    + destruct (bl_or_no c).
+      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        apply H0 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        apply (retire_case_neg1 (dessous c) (remove eq_coord c p)).
+        * symmetry.
+          apply (retire_case Blanc c p).
+          ** simpl.
+             assumption.
+          ** admit.
+        * assumption.
+      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        apply H1 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite remove_assoc.
+        rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)).
+        * admit.
+        * assumption.
 
-      (* si c blanc alors dessous c = noir *)
+    + destruct (bl_or_no c).
+      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        apply H0 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite (retire_case_neg (droite c) (remove eq_coord c p)).
+        * symmetry.
+          apply (retire_case Blanc c p).
+          ** simpl.
+             assumption.
+          ** admit.
+        * assumption.
+      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        apply H1 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite remove_assoc.
+        rewrite (retire_case_neg c (remove eq_coord (droite c) p)).
+        * admit.
+        * assumption.
+  }
+  {
+    destruct d; simpl in *.
+    + destruct (bl_or_no c).
+      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        apply H0 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite <- (retire_case_neg (dessous c) (remove eq_coord c p)).
+        * symmetry.
+          apply (retire_case Blanc c p).
+          ** simpl.
+             assumption.
+          ** admit.
+        * assumption.
+      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        apply H1 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite remove_assoc.
+        rewrite (retire_case_neg c (remove eq_coord (dessous c) p)).
+        * admit.
+        * assumption.
 
+    + destruct (bl_or_no c).
+      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        apply H0 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite (retire_case_neg (droite c) (remove eq_coord c p)).
+        * symmetry.
+          apply (retire_case Blanc c p).
+          ** simpl.
+             assumption.
+          ** admit.
+        * assumption.
+      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        apply H1 in H2_cpy.
+        rewrite H.
+        unfold pose_domino.
+        simpl.
+        rewrite remove_assoc.
+        rewrite (retire_case_neg c (remove eq_coord (droite c) p)).
+        * admit.
+        * assumption.
+  }
   }
 
-  }
+Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
+  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
+
+Lemma domino_bicolor (d : domino) :
+  (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
+  (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
+
