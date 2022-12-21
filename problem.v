@@ -509,7 +509,7 @@ Proof.
         rewrite H.
         unfold pose_domino.
         simpl.
-        apply (retire_case_neg1 (dessous c) (remove eq_coord c p)).
+        rewrite (retire_case_neg1 (dessous c) (remove eq_coord c p)).
         * symmetry.
           apply (retire_case Blanc c p).
           ** simpl.
@@ -534,7 +534,7 @@ Proof.
         rewrite H.
         unfold pose_domino.
         simpl.
-        rewrite (retire_case_neg (droite c) (remove eq_coord c p)).
+        rewrite (retire_case_neg1 (droite c) (remove eq_coord c p)).
         * symmetry.
           apply (retire_case Blanc c p).
           ** simpl.
@@ -548,63 +548,12 @@ Proof.
         unfold pose_domino.
         simpl.
         rewrite remove_assoc.
-        rewrite (retire_case_neg c (remove eq_coord (droite c) p)).
+        rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)).
         * admit.
         * assumption.
   }
-  {
-    destruct d; simpl in *.
-    + destruct (bl_or_no c).
-      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
-        apply H0 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite <- (retire_case_neg (dessous c) (remove eq_coord c p)).
-        * symmetry.
-          apply (retire_case Blanc c p).
-          ** simpl.
-             assumption.
-          ** admit.
-        * assumption.
-      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
-        apply H1 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite remove_assoc.
-        rewrite (retire_case_neg c (remove eq_coord (dessous c) p)).
-        * admit.
-        * assumption.
-
-    + destruct (bl_or_no c).
-      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
-        apply H0 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite (retire_case_neg (droite c) (remove eq_coord c p)).
-        * symmetry.
-          apply (retire_case Blanc c p).
-          ** simpl.
-             assumption.
-          ** admit.
-        * assumption.
-      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
-        apply H1 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite remove_assoc.
-        rewrite (retire_case_neg c (remove eq_coord (droite c) p)).
-        * admit.
-        * assumption.
-  }
-  }
+  admit.
+Admitted.
 
 Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
   couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
