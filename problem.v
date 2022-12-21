@@ -12,7 +12,15 @@ Record coord := mkCoord { x : nat; y : nat }.
 
 Definition plateau := list coord.
 
-Inductive couleur := Blanc | Noir | Vide.
+Inductive couleur := Blanc | Noir.
+
+Definition neg_couleur c :=
+  match c with
+  | Blanc => Noir
+  | Noir => Blanc
+  end.
+
+
 
 Inductive domino :=
   | Hauteur : coord -> domino
@@ -31,6 +39,12 @@ Definition case_prise : domino -> coord := fun d =>
 
 Definition case_blanche (c : coord) : Prop := Nat.Even (c.(x) + c.(y)).
 Definition case_noire   (c : coord) : Prop := Nat.Odd  (c.(x) + c.(y)).
+
+Definition couleur_case (cc : couleur) (c : coord) : Prop :=
+  match cc with
+  | Blanc => Nat.Even (c.(x) + c.(y))
+  | Noir  => Nat.Odd  (c.(x) + c.(y))
+  end.
 
 (* Lemma eqeq_refl (c1 c2 : coord) : c1 == c2 -> c2 == c1. *)
 Lemma ncolor_neq (c1 c2 : coord) : case_noire c1 -> case_blanche c2 -> c1 <> c2.
@@ -68,7 +82,14 @@ Fixpoint card_no (p : plateau) :=
       else card_no t
   end.
 
-Lemma bl_or_no : forall c: coord, case_blanche c \/ case_noire c.
+Definition card (c : couleur) (p : plateau) :=
+  match c with
+  | Blanc => card_bl p
+  | Noir  => card_no p
+  end.
+
+
+Lemma bl_or_no : forall c: coord, couleur_case Blanc c \/ couleur_case Noir c.
 Proof.
   intro.
   eapply Nat.Even_or_Odd.
@@ -109,15 +130,22 @@ Proof.
     assumption.
 Qed.
 
-Ltac casse_if_b h :=
-  unfold case_blanche in h;
-  rewrite <- Nat.even_spec in h;
-  rewrite h.
-
-Ltac casse_if_n h :=
-  unfold case_noire in h;
-  rewrite <- Nat.odd_spec in h;
-  rewrite h.
+Ltac casse_if col h :=
+  unfold card;
+  match col with
+  | Blanc =>
+    unfold card_bl;
+    unfold couleur_case in h;
+    unfold case_blanche in h;
+    rewrite <- Nat.even_spec in h;
+    rewrite h
+  | Noir =>
+    unfold card_no;
+    unfold couleur_case in h;
+    unfold case_noire in h;
+    rewrite <- Nat.odd_spec in h;
+    rewrite h
+  end.
 
 Lemma sum_card_bl_no : forall p : plateau, card_bl p + card_no p = List.length p.
 Proof.
@@ -125,13 +153,13 @@ Proof.
   { simpl. reflexivity. }
   { simpl.
     destruct (bl_or_no a).
-    + casse_if_b H.
+    + casse_if Blanc H.
       apply even_to_not_odd in H.
       rewrite H.
       simpl.
       apply Nat.succ_inj_wd.
       assumption.
-    + casse_if_n H.
+    + casse_if Noir H.
       apply odd_to_not_even in H.
       rewrite H.
       rewrite Nat.add_comm.
@@ -213,12 +241,12 @@ Admitted.
 
 Hypothesis unique : forall a : coord, forall p : plateau, (List.In a (a :: p) -> ~List.In a p).
 
-Lemma rw_util (a c : coord) (p : plateau) : a <> c -> card_bl (a :: (p \ c)) = card_bl ((a :: p) \ c).
+Lemma rw_util col (a c : coord) (p : plateau) : a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
 Proof.
   intro. induction p; simpl in *.
   { case (bl_or_no a).
     + intro.
-      casse_if_b H0.
+      casse_if Blanc H0.
       simpl.
       case (eq_coord c a).
       admit.
@@ -240,72 +268,124 @@ Qed.
 Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p.
 
 
-Lemma cons_card  a p : case_blanche a -> card_bl (a :: p) = card_bl p + 1.
+Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1.
 Proof.
   intro.
-  unfold card_bl.
-  casse_if_b H.
-  rewrite Nat.add_1_r. trivial.
+  destruct col.
+  - casse_if Blanc H.
+    rewrite Nat.add_1_r.
+    trivial.
+  - casse_if Noir H.
+    rewrite Nat.add_1_r.
+    trivial.
 Qed.
 
-Lemma cons_card_neq a p : case_noire a -> card_bl (a :: p) = card_bl p.
+Lemma cons_card_neq col a p : couleur_case col a -> card (neg_couleur col) (a :: p) = card (neg_couleur col) p.
 Proof.
   intro.
-  unfold card_bl.
-  unfold case_noire in H.
-  rewrite <- Nat.odd_spec in H.
-  apply odd_to_not_even in H.
-  rewrite H.
-  trivial.
+  destruct col; simpl; unfold couleur_case in H;
+  [ rewrite <- Nat.even_spec in H; apply even_to_not_odd in H
+  | rewrite <- Nat.odd_spec  in H; apply odd_to_not_even in H ];
+    rewrite H;
+    trivial.
 Qed.
 
-Lemma card_eq_hdS a p p' : card_bl p + 1 = card_bl p' -> card_bl (a :: p) + 1 = card_bl (a :: p').
+Lemma chg_color1 : Blanc = neg_couleur Noir.
+Proof.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma chg_color2 : Noir = neg_couleur Blanc.
+Proof.
+  simpl.
+  reflexivity.
+Qed.
+
+
+Lemma card_eq_hdS col a p p' : card col p + 1 = card col p' -> card col (a :: p) + 1 = card col (a :: p').
 Proof.
   intro.
-  case (bl_or_no a).
-  - intro.
-    rewrite (cons_card a p H0).
-    rewrite (cons_card a p' H0).
-    congruence.
-  - intro.
-    rewrite (cons_card_neq a p H0).
-    rewrite (cons_card_neq a p' H0).
-    congruence.
+  destruct col; case (bl_or_no a); intro.
+    + rewrite (cons_card Blanc a p H0).
+      rewrite (cons_card Blanc a p' H0).
+      congruence.
+    + rewrite chg_color1.
+      rewrite (cons_card_neq Noir a p H0).
+      rewrite (cons_card_neq Noir a p' H0).
+      simpl in *.
+      assumption.
+    + rewrite chg_color2.
+      rewrite (cons_card_neq Blanc a p H0).
+      rewrite (cons_card_neq Blanc a p' H0).
+      simpl in *.
+      assumption.
+    + rewrite (cons_card Noir a p H0).
+      rewrite (cons_card Noir a p' H0).
+      congruence.
 Qed.
 
-Lemma retire_case_bl (a : coord) (p: plateau) :
-  case_blanche a ->
-  List.In a p ->
-  card_bl (p \ a) + 1 = card_bl p.
+Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
+  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
 Proof.
-  induction p.
-  { simpl. intros. contradiction. }
-  { intros Bc Hin.
+  case col;
+  induction p; intros Bc Hin; try contradiction.
+  {
     case (eq_coord a a0); intro H.
     + rewrite H.
       rewrite remove_hd.
       rewrite H in Bc.
-      rewrite (cons_card a0 p Bc).
+      rewrite (cons_card Blanc a0 p Bc).
       trivial.
     + case (eq_coord a a0). intro. contradiction.
       intro. apply diff_sym in H.
       case (bl_or_no a0); intro.
-      - rewrite (cons_card a0 p H0).
+      - rewrite (cons_card Blanc a0 p H0).
         rewrite <- IHp; try assumption.
         * rewrite Nat.add_1_r, Nat.add_1_r.
           apply Nat.succ_inj_wd.
-          rewrite <- (rw_util a0 a p H).
+          rewrite <- (rw_util Blanc a0 a p H).
           apply cons_card.
           assumption.
         * eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
           -- assumption.
-      - rewrite <- (rw_util a0 a p H).
-        rewrite (card_eq_hdS a0 (remove eq_coord a p) p).
+      - rewrite <- (rw_util Blanc a0 a p H).
+        rewrite (card_eq_hdS Blanc a0 (remove eq_coord a p) p).
         * reflexivity.
         * apply IHp; try assumption.
           eapply List.in_inv in Hin.
+          destruct Hin.
+          -- rewrite H1 in H. contradiction.
+          -- assumption.
+  }
+  {
+    case (eq_coord a a0); intro H.
+    + rewrite H.
+      rewrite remove_hd.
+      rewrite H in Bc.
+      rewrite (cons_card Noir a0 p Bc).
+      trivial.
+    + case (eq_coord a a0). intro. contradiction.
+      intro. apply diff_sym in H.
+      case (bl_or_no a0); intro.
+      - rewrite <- (rw_util Noir a0 a p H).
+        rewrite (card_eq_hdS Noir a0 (remove eq_coord a p) p).
+        * reflexivity.
+        * apply IHp; try assumption.
+          eapply List.in_inv in Hin.
+          destruct Hin.
+          -- rewrite H1 in H. contradiction.
+          -- assumption.
+      - rewrite (cons_card Noir a0 p H0).
+        rewrite <- IHp; try assumption.
+        * rewrite Nat.add_1_r, Nat.add_1_r.
+          apply Nat.succ_inj_wd.
+          rewrite <- (rw_util Noir a0 a p H).
+          apply cons_card.
+          assumption.
+        * eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
           -- assumption.
