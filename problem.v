@@ -267,6 +267,9 @@ Eval compute in plateau_sc.
 Definition pose_domino (d:domino) (p:plateau) : plateau :=
   p \ fst (case_prise d) \ snd (case_prise d).
 
+Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
+  (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
+
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
 Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
 
@@ -386,7 +389,7 @@ Proof.
       intro. apply diff_sym in H.
       case (bl_or_no a0); intro.
       - rewrite (cons_card Blanc a0 p H0).
-        rewrite <- IHp; try assumption.
+        rewrite <- IHp; trivial.
         * rewrite Nat.add_1_r, Nat.add_1_r.
           apply Nat.succ_inj_wd.
           rewrite <- (rw_util Blanc a0 a p H).
@@ -399,7 +402,7 @@ Proof.
       - rewrite <- (rw_util Blanc a0 a p H).
         rewrite (card_eq_hdS Blanc a0 (remove eq_coord a p) p).
         * reflexivity.
-        * apply IHp; try assumption.
+        * apply IHp; trivial.
           eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
@@ -418,13 +421,13 @@ Proof.
       - rewrite <- (rw_util Noir a0 a p H).
         rewrite (card_eq_hdS Noir a0 (remove eq_coord a p) p).
         * reflexivity.
-        * apply IHp; try assumption.
+        * apply IHp; trivial.
           eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
           -- assumption.
       - rewrite (cons_card Noir a0 p H0).
-        rewrite <- IHp; try assumption.
+        rewrite <- IHp; trivial.
         * rewrite Nat.add_1_r, Nat.add_1_r.
           apply Nat.succ_inj_wd.
           rewrite <- (rw_util Noir a0 a p H).
@@ -445,7 +448,7 @@ Proof.
   { intros.
     simpl.
     case (eq_coord a a0); intro.
-    - rewrite IHp; try assumption.
+    - rewrite IHp; trivial.
       rewrite e in H.
       unfold case_noire in H.
       apply Nat.odd_spec in H.
@@ -469,7 +472,7 @@ Proof.
   { intros.
     simpl.
     case (eq_coord a a0); intro.
-    - rewrite IHp; try assumption.
+    - rewrite IHp; trivial.
       rewrite e in H.
       unfold case_blanche in H.
       apply Nat.even_spec in H.
@@ -504,61 +507,49 @@ Proof.
     destruct d; simpl in *.
     + destruct (bl_or_no c).
       - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        assert (H2_cpy : Nat.Even (x c + y c)); trivial.
         apply H0 in H2_cpy.
         rewrite H.
         unfold pose_domino.
         simpl.
-        rewrite (retire_case_neg1 (dessous c) (remove eq_coord c p)).
-        * symmetry.
-          apply (retire_case Blanc c p).
-          ** simpl.
-             assumption.
-          ** admit.
-        * assumption.
+        rewrite (retire_case_neg1 (dessous c) (remove eq_coord c p)); trivial.
+        symmetry.
+        apply (retire_case Blanc c p); simpl; trivial.
+        destruct (rm_iff_mem p p' (Hauteur c)); trivial.
       - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
         apply H1 in H2_cpy.
         rewrite H.
         unfold pose_domino.
         simpl.
         rewrite remove_assoc.
-        rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)).
-        * admit.
-        * assumption.
-
+        rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)); trivial.
+        symmetry.
+        apply (retire_case Blanc (dessous c) p); simpl; trivial.
+        destruct (rm_iff_mem p p' (Hauteur c)); trivial.
     + destruct (bl_or_no c).
       - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); try assumption.
+        assert (H2_cpy : Nat.Even (x c + y c)); trivial.
         apply H0 in H2_cpy.
         rewrite H.
         unfold pose_domino.
         simpl.
-        rewrite (retire_case_neg1 (droite c) (remove eq_coord c p)).
-        * symmetry.
-          apply (retire_case Blanc c p).
-          ** simpl.
-             assumption.
-          ** admit.
-        * assumption.
+        rewrite (retire_case_neg1 (droite c) (remove eq_coord c p)); trivial.
+        symmetry.
+        apply (retire_case Blanc c p); simpl; trivial.
+        apply (rm_iff_mem p p' (Largeur c)).
+        trivial.
       - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); try assumption.
+        assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
         apply H1 in H2_cpy.
         rewrite H.
         unfold pose_domino.
         simpl.
         rewrite remove_assoc.
-        rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)).
-        * admit.
-        * assumption.
+        rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)); trivial.
+        symmetry.
+        apply (retire_case Blanc (droite c) p); simpl; trivial.
+        apply (rm_iff_mem p p' (Largeur c)).
+        trivial.
   }
-  admit.
 Admitted.
-
-Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
-  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
-
-Lemma domino_bicolor (d : domino) :
-  (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
-  (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
-
