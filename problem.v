@@ -32,15 +32,6 @@ Definition case_prise : domino -> coord := fun d =>
 Definition case_blanche (c : coord) : Prop := Nat.Even (c.(x) + c.(y)).
 Definition case_noire   (c : coord) : Prop := Nat.Odd  (c.(x) + c.(y)).
 
-(* Lemma eq_coord_eq (c1 c2 : coord) : c1 == c2 = true -> c1 = c2.
-Admitted. *)
-(* Proof.
-  induction c1.
-  induction c2.
-  unfold "==".
-  intro.
-   *)
-
 (* Lemma eqeq_refl (c1 c2 : coord) : c1 == c2 -> c2 == c1. *)
 Lemma ncolor_neq (c1 c2 : coord) : case_noire c1 -> case_blanche c2 -> c1 <> c2.
 Proof.
@@ -83,11 +74,9 @@ Proof.
   eapply Nat.Even_or_Odd.
 Qed.
 
-Lemma bl_no : forall c: coord, case_blanche c -> ~ (case_noire c).
+Lemma bl_no_false : forall c: coord, case_blanche c -> ~ (case_noire c).
 Proof.
   intros c H1 H2.
-  (* unfold case_blanche in H1.
-  unfold case_noire in H2. *)
   apply (Nat.Even_Odd_False (x c + y c)); assumption.
 Qed.
 
@@ -222,68 +211,104 @@ Admitted.
 Lemma droite_nb (c : coord) : case_noire c -> case_blanche (droite c).
 Admitted.
 
-
-Lemma rew_cons_card (a : coord) (p: plateau) :
-  case_blanche a ->
-  card_bl (a :: p) = S (card_bl p).
-Proof.
-  induction p; simpl; intro; casse_if_b H; trivial.
-Qed.
-
-Lemma remove_bad_color (a : coord) (p: plateau) :
-  case_noire a ->
-  card_bl (a :: p) = card_bl p.
-Proof.
-Admitted.
-
-Lemma cons_card (a : coord) (p: plateau) :
-  case_blanche a -> card_bl (a :: p) = card_bl p + 1.
-Proof.
-  induction p; intro; simpl; casse_if_b H.
-  + trivial.
-  + rewrite Nat.add_1_r. trivial.
-Qed.
-
-Lemma rew_remove_card (a : coord) (p: plateau) :
-  case_blanche a ->
-  card_bl (p \ a) = card_bl p - 1.
-Proof.
-  induction p.
-  - simpl. trivial.
-  - intro.
-Admitted.
+Hypothesis unique : forall a : coord, forall p : plateau, (List.In a (a :: p) -> ~List.In a p).
 
 Lemma rw_util (a c : coord) (p : plateau) : a <> c -> card_bl (a :: (p \ c)) = card_bl ((a :: p) \ c).
 Proof.
+  intro. induction p; simpl in *.
+  { case (bl_or_no a).
+    + intro.
+      casse_if_b H0.
+      simpl.
+      case (eq_coord c a).
+      admit.
+      (* assert ((eq_coord c a) -> False). *)
+
+  (* } *)
 Admitted.
-(* Proof.
-  intro.
-  unfold card_bl. *)
 
 Require Import Lia.
+
+Lemma diff_sym (a c : coord) : a <> c -> c <> a.
+Proof.
+  intros H H1.
+  rewrite H1 in H.
+  contradiction.
+Qed.
 
 
 Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p.
 
-Lemma _name_ c a p : c <> a -> case_blanche c -> card_bl ((a :: p) \ c) = card_bl (a :: p) + 1.
+
+Lemma cons_card  a p : case_blanche a -> card_bl (a :: p) = card_bl p + 1.
 Proof.
-  induction p; intros.
-  - simpl.
+  intro.
+  unfold card_bl.
+  casse_if_b H.
+  rewrite Nat.add_1_r. trivial.
+Qed.
 
-Print List.
+Lemma cons_card_neq a p : case_noire a -> card_bl (a :: p) = card_bl p.
+Proof.
+  intro.
+  unfold card_bl.
+  unfold case_noire in H.
+  rewrite <- Nat.odd_spec in H.
+  apply odd_to_not_even in H.
+  rewrite H.
+  trivial.
+Qed.
 
-Lemma retire_case_bl (p:plateau) (c:coord) : case_blanche c ->
-List.In c p -> card_bl (p \ c) + 1 = card_bl p.
+Lemma card_eq_hdS a p p' : card_bl p + 1 = card_bl p' -> card_bl (a :: p) + 1 = card_bl (a :: p').
+Proof.
+  intro.
+  case (bl_or_no a).
+  - intro.
+    rewrite (cons_card a p H0).
+    rewrite (cons_card a p' H0).
+    congruence.
+  - intro.
+    rewrite (cons_card_neq a p H0).
+    rewrite (cons_card_neq a p' H0).
+    congruence.
+Qed.
+
+Lemma retire_case_bl (a : coord) (p: plateau) :
+  case_blanche a ->
+  List.In a p ->
+  card_bl (p \ a) + 1 = card_bl p.
 Proof.
   induction p.
-  { intros. simpl in *. (* apply Nat.lt_neq in H0. *) contradiction. }
+  { simpl. intros. contradiction. }
   { intros Bc Hin.
-    case (eq_coord a c); intro H.
+    case (eq_coord a a0); intro H.
     + rewrite H.
       rewrite remove_hd.
-      rewrite (cons_card c p Bc).
+      rewrite H in Bc.
+      rewrite (cons_card a0 p Bc).
       trivial.
-    + simpl.
+    + case (eq_coord a a0). intro. contradiction.
+      intro. apply diff_sym in H.
+      case (bl_or_no a0); intro.
+      - rewrite (cons_card a0 p H0).
+        rewrite <- IHp; try assumption.
+        * rewrite Nat.add_1_r, Nat.add_1_r.
+          apply Nat.succ_inj_wd.
+          rewrite <- (rw_util a0 a p H).
+          apply cons_card.
+          assumption.
+        * eapply List.in_inv in Hin.
+          destruct Hin.
+          -- rewrite H1 in H. contradiction.
+          -- assumption.
+      - rewrite <- (rw_util a0 a p H).
+        rewrite (card_eq_hdS a0 (remove eq_coord a p) p).
+        * reflexivity.
+        * apply IHp; try assumption.
+          eapply List.in_inv in Hin.
+          destruct Hin.
+          -- rewrite H1 in H. contradiction.
+          -- assumption.
   }
 Qed.
 
