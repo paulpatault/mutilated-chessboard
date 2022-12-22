@@ -1,4 +1,4 @@
-Require Import Arith Nat Bool List Lia.
+Require Import Arith Nat List.
 Import ListNotations.
 
 
@@ -163,7 +163,7 @@ Lemma even_to_not_odd (n:nat) : Nat.even n = true -> Nat.odd n = false.
 Proof.
   rewrite <- Nat.negb_odd.
   intro.
-  rewrite negb_true_iff in H.
+  rewrite Bool.negb_true_iff in H.
   assumption.
 Qed.
 
@@ -172,11 +172,11 @@ Proof.
   split.
   - rewrite <- Nat.negb_odd.
     intro.
-    rewrite negb_false_iff.
+    rewrite Bool.negb_false_iff.
     assumption.
   - intro.
     unfold Nat.odd .
-    rewrite negb_true_iff.
+    rewrite Bool.negb_true_iff.
     assumption.
 Qed.
 
@@ -187,14 +187,16 @@ Ltac casse_if col h :=
     unfold card_bl;
     unfold couleur_case in h;
     unfold case_blanche in h;
-    rewrite <- Nat.even_spec in h;
-    rewrite h
+    try rewrite <- Nat.even_spec in h;
+    try rewrite h;
+    trivial
   | Noir =>
     unfold card_no;
     unfold couleur_case in h;
     unfold case_noire in h;
-    rewrite <- Nat.odd_spec in h;
-    rewrite h
+    try rewrite <- Nat.odd_spec in h;
+    try rewrite h;
+    trivial
   end.
 
 Lemma sum_card_bl_no : forall p : plateau, card_bl p + card_no p = List.length p.
@@ -277,33 +279,75 @@ Eval compute in plateau_sc.
 Eval compute in pose_domino (mk_domino_H 4 4) plateau_sc.
 
 
-Lemma desous_bn (c : coord) : case_blanche c -> case_noire (dessous c).
-Admitted.
-Lemma droite_bn (c : coord) : case_blanche c -> case_noire (droite c).
-Admitted.
-
-Lemma desous_nb (c : coord) : case_noire c -> case_blanche (dessous c).
-Admitted.
-Lemma droite_nb (c : coord) : case_noire c -> case_blanche (droite c).
-Admitted.
-
-Hypothesis unique : forall a : coord, forall p : plateau, (List.In a (a :: p) -> ~List.In a p).
-
 Lemma rw_util col (a c : coord) (p : plateau) : a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
 Proof.
-  intro. induction p; simpl in *.
-  { case (bl_or_no a).
-    + intro.
+  intro.
+  induction p.
+  (* HR *)
+  { case col; simpl; case (bl_or_no a).
+    - intro.
       casse_if Blanc H0.
-      simpl.
       case (eq_coord c a).
-      admit.
-      (* assert ((eq_coord c a) -> False). *)
+      + intro. symmetry in e. contradiction.
+      + intro. simpl. rewrite H0. trivial.
+    - intro.
+      casse_if Noir H0.
+      apply odd_to_not_even in H0.
+      rewrite H0.
+      case (eq_coord c a).
+      + intro. symmetry in e. contradiction.
+      + intro. simpl. casse_if Noir H0.
+    - intro.
+      casse_if Blanc H0.
+      apply even_to_not_odd in H0.
+      rewrite H0.
+      case (eq_coord c a); intro; trivial.
+      + simpl. rewrite H0. trivial.
+    - intro.
+      casse_if Noir H0.
+      case (eq_coord c a); intro; trivial.
+      + symmetry in e. contradiction.
+      + simpl. rewrite H0. trivial.
+  }
+  (* Heredite *)
+  {
+    case col; simpl; case (bl_or_no a).
+    - intro.
+      casse_if Blanc H0.
+      case (eq_coord c a).
+      + intro. symmetry in e. contradiction.
+      + intro. simpl. rewrite H0. trivial.
+    - intro.
+      casse_if Noir H0.
+      apply odd_to_not_even in H0.
+      rewrite H0.
+      case (eq_coord c a0);
+      intro;
+        case (eq_coord c a);
+          intro; trivial; simpl;
+          casse_if Noir H0.
+    - intro.
+      casse_if Blanc H0.
+      apply even_to_not_odd in H0.
+      rewrite H0.
+      case (eq_coord c a); intro; trivial.
+      + simpl. rewrite H0. trivial.
+    - intro.
+      casse_if Noir H0.
+      apply odd_to_not_even in H0.
+      simpl.
+      case (eq_coord c a0); intro; simpl.
+      + case (eq_coord c a); intro; simpl.
+        * symmetry in e0. contradiction.
+        * apply odd_to_not_even in H0.
+          rewrite H0.
+          trivial.
+      + case (eq_coord c a); intro; simpl.
+        * symmetry in e. contradiction.
+        * apply odd_to_not_even in H0. rewrite H0. trivial.
+  }
+Qed.
 
-  (* } *)
-Admitted.
-
-Require Import Lia.
 
 Lemma diff_sym (a c : coord) : a <> c -> c <> a.
 Proof.
@@ -465,7 +509,8 @@ Proof.
   }
 Qed.
 
-Lemma retire_case_neg2 (a : coord) (p : plateau) : case_blanche a -> card_no (p \ a) = card_no p.
+Lemma retire_case_neg2 (a : coord) (p : plateau) :
+  case_blanche a -> card_no (p \ a) = card_no p.
 Proof.
   induction p.
   { auto. }
@@ -491,8 +536,128 @@ Qed.
 
 Lemma remove_assoc (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
 Proof.
-  induction p; auto.
-  simpl.
+  case (eq_coord a b).
+  { intro. rewrite e. reflexivity. }
+  { intro.
+    induction p; trivial.
+    case (eq_coord a a0).
+    { intro.
+      rewrite e.
+      simpl.
+      case (eq_coord a0 a0).
+      - intro. 
+        case (eq_coord b a0).
+        + intro. rewrite e1. reflexivity.
+        + intro. rewrite <- e, IHp.
+          simpl. case (eq_coord a a).
+          * trivial.
+          * intro. contradiction.
+      - intro. contradiction. }
+    { intro. simpl.
+      case (eq_coord a a0).
+      - intro. contradiction.
+      - intro.
+        case (eq_coord b a0).
+        + intro. rewrite e. simpl.
+          case (eq_coord a0 a0).
+          * intro. rewrite <- e. trivial.
+          * intro. contradiction.
+        + intro. simpl.
+          case (eq_coord b a0).
+          ++ intro. contradiction.
+          ++ intro. case (eq_coord a a0).
+            * intro. contradiction.
+            * intro. rewrite IHp. trivial. } }
+Qed.
+
+Lemma invariant_blanc : forall p p': plateau, forall d: domino,
+  p' = pose_domino d p ->
+  card Blanc p = card Blanc p' + 1.
+  (* card Noir p  = card Noir  p' + 1. *)
+Proof.
+  intros.
+  case (domino_bicolor d).
+  intros H0 H1.
+  destruct d; simpl in *; destruct (bl_or_no c).
+  { clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+    assert (H2_cpy : Nat.Even (x c + y c)); trivial.
+    apply H0 in H2_cpy.
+    rewrite H.
+    unfold pose_domino.
+    simpl.
+    rewrite (retire_case_neg1 (dessous c) (remove eq_coord c p)); trivial.
+    symmetry.
+    apply (retire_case Blanc c p); simpl; trivial.
+    destruct (rm_iff_mem p p' (Hauteur c)); trivial. }
+  { clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+    assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
+    apply H1 in H2_cpy.
+    rewrite H.
+    unfold pose_domino.
+    simpl.
+    rewrite remove_assoc.
+    rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)); trivial.
+    symmetry.
+    apply (retire_case Blanc (dessous c) p); simpl; trivial.
+    destruct (rm_iff_mem p p' (Hauteur c)); trivial. }
+  { clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
+    assert (H2_cpy : Nat.Even (x c + y c)); trivial.
+    apply H0 in H2_cpy.
+    rewrite H.
+    unfold pose_domino.
+    simpl.
+    rewrite (retire_case_neg1 (droite c) (remove eq_coord c p)); trivial.
+    symmetry.
+    apply (retire_case Blanc c p); simpl; trivial.
+    apply (rm_iff_mem p p' (Largeur c)).
+    trivial. }
+  { clear H0; unfold couleur_case in H2; unfold case_noire in H1.
+    assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
+    apply H1 in H2_cpy.
+    rewrite H.
+    unfold pose_domino.
+    simpl.
+    rewrite remove_assoc.
+    rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)); trivial.
+    symmetry.
+    apply (retire_case Blanc (droite c) p); simpl; trivial.
+    apply (rm_iff_mem p p' (Largeur c)).
+    trivial. }
+Qed.
+
+Lemma in_simp c p : In (dessous c) p -> In (dessous c) (remove eq_coord c p).
+Proof.
+  assert (H : c <> dessous c).
+  - unfold dessous.
+    intro.
+    (* contradiction.
+    unfold c. *)
+Admitted.
+
+Lemma invariant_noir : forall p p': plateau, forall d: domino,
+  p' = pose_domino d p ->
+  card Noir p  = card Noir  p' + 1.
+Proof.
+  intros.
+  case (domino_bicolor d).
+  intros H0 H1.
+  destruct d; simpl in *; destruct (bl_or_no c).
+  { clear H1.
+    unfold couleur_case in H2.
+    unfold case_blanche in H0.
+    assert (H2_cpy : Nat.Even (x c + y c)); trivial.
+    apply H0 in H2_cpy.
+    rewrite H.
+    unfold pose_domino.
+    simpl.
+    symmetry.
+    rewrite <- (retire_case_neg2 c p).
+    apply (retire_case Noir (dessous c) (remove eq_coord c p)); simpl; trivial.
+    - apply in_simp.
+      apply (rm_iff_mem p p' (Hauteur c)).
+      trivial.
+    - unfold case_blanche. assumption. }
+    
 Admitted.
 
 Lemma invariant : forall p p': plateau, forall d: domino,
@@ -501,55 +666,8 @@ Lemma invariant : forall p p': plateau, forall d: domino,
   card Noir p  = card Noir  p' + 1.
 Proof.
   intros.
-  case (domino_bicolor d).
   split.
-  {
-    destruct d; simpl in *.
-    + destruct (bl_or_no c).
-      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); trivial.
-        apply H0 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite (retire_case_neg1 (dessous c) (remove eq_coord c p)); trivial.
-        symmetry.
-        apply (retire_case Blanc c p); simpl; trivial.
-        destruct (rm_iff_mem p p' (Hauteur c)); trivial.
-      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
-        apply H1 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite remove_assoc.
-        rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)); trivial.
-        symmetry.
-        apply (retire_case Blanc (dessous c) p); simpl; trivial.
-        destruct (rm_iff_mem p p' (Hauteur c)); trivial.
-    + destruct (bl_or_no c).
-      - clear H1; unfold couleur_case in H2; unfold case_blanche in H0.
-        assert (H2_cpy : Nat.Even (x c + y c)); trivial.
-        apply H0 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite (retire_case_neg1 (droite c) (remove eq_coord c p)); trivial.
-        symmetry.
-        apply (retire_case Blanc c p); simpl; trivial.
-        apply (rm_iff_mem p p' (Largeur c)).
-        trivial.
-      - clear H0; unfold couleur_case in H2; unfold case_noire in H1.
-        assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
-        apply H1 in H2_cpy.
-        rewrite H.
-        unfold pose_domino.
-        simpl.
-        rewrite remove_assoc.
-        rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)); trivial.
-        symmetry.
-        apply (retire_case Blanc (droite c) p); simpl; trivial.
-        apply (rm_iff_mem p p' (Largeur c)).
-        trivial.
-  }
-Admitted.
+  - apply (invariant_blanc p p' d); assumption.
+  - apply (invariant_noir p p' d);  assumption.
+Qed.
+
