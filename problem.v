@@ -671,3 +671,20 @@ Proof.
   - apply (invariant_noir p p' d);  assumption.
 Qed.
 
+
+(* Lemma resoluble (p  *)
+Inductive resoluble (p : plateau) : Prop :=
+  | 
+  | axiome : List.length p = 0 -> resoluble p
+  | next : forall d, resoluble (pose_domino d p) -> resoluble p.
+
+Lemma mutilated_board : ~ resoluble plateau_sc.
+Proof.
+  assert (H : List.length plateau_sc <> 0).
+  - intro.
+    simpl in H.
+    discriminate.
+  - intro.
+    induction H.
+    + admit.
+Admitted.
