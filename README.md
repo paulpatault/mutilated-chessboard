@@ -48,6 +48,6 @@ L'échiquer est représenté par un ensemble de cases :
 
 ### TODO
 
-- [ ] lemme `in_simp`
-- [ ] lemme `invariant_noir`
+- [x] lemme `in_simp`
+- [x] lemme `invariant_noir`
 - [ ] finir formalisation du problème général (après invariant : établir la contradiction)
