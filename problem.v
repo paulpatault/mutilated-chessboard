@@ -253,7 +253,7 @@ Fixpoint mk_plateau (n:nat) :=
   end.
 
 
-Definition plateau8 : plateau := mk_plateau 8.
+Definition plateau_base : plateau := mk_plateau 8.
 
 Eval compute in mk_plateau 8.
 
@@ -264,14 +264,14 @@ Defined.
 
 Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
 
-Definition plateau_sc := plateau8 \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
+Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
 
-Eval compute in plateau_sc.
+Eval compute in plateau_coupe.
 
-  (* List.filter (fun e => negb (neq07 e)) plateau8. *)
+  (* List.filter (fun e => negb (neq07 e)) plateau_base. *)
 (*
-   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau8.   (* true *)
-   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_sc. (* false *)
+   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_base.   (* true *)
+   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_coupe. (* false *)
  *)
 
 Definition pose_domino (d:domino) (p:plateau) : plateau :=
@@ -283,8 +283,8 @@ Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
 Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
 
-Eval compute in plateau_sc.
-Eval compute in pose_domino (mk_domino_H 4 4) plateau_sc.
+Eval compute in plateau_coupe.
+Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
 
 
 Lemma rw_util col (a c : coord) (p : plateau) : a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
@@ -762,20 +762,58 @@ Proof.
   - apply (invariant_noir p p' d);  assumption.
 Qed.
 
-
-(* Lemma resoluble (p  *)
-Inductive resoluble (p : plateau) : Prop :=
-  | 
-  | axiome : List.length p = 0 -> resoluble p
-  | next : forall d, resoluble (pose_domino d p) -> resoluble p.
-
-Lemma mutilated_board : ~ resoluble plateau_sc.
+Lemma card_base : card Noir plateau_base = card Blanc plateau_base.
 Proof.
-  assert (H : List.length plateau_sc <> 0).
-  - intro.
-    simpl in H.
-    discriminate.
-  - intro.
-    induction H.
-    + admit.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma card_coupe : card Noir plateau_coupe = card Blanc plateau_coupe + 2.
+Proof.
+  simpl.
+  reflexivity.
+Qed.
+
+(* Inductive resoluble (p : plateau) : Prop := *)
+  (* | axiome : List.length p = 0 -> resoluble p *)
+  (* | next : forall d, resoluble (pose_domino d p) -> resoluble p. *)
+
+(* Check List.fold_left. *)
+Definition resoluble (p : plateau) :=
+  exists dl : list domino, (List.fold_left (fun p d => pose_domino d p) dl p) = [].
+
+Definition sol_base :=
+  [(mk_domino_H 0 0); (mk_domino_H 0 2); (mk_domino_H 0 4); (mk_domino_H 0 6);
+  (mk_domino_H 1 0); (mk_domino_H 1 2); (mk_domino_H 1 4); (mk_domino_H 1 6);
+  (mk_domino_H 2 0); (mk_domino_H 2 2); (mk_domino_H 2 4); (mk_domino_H 2 6);
+  (mk_domino_H 3 0); (mk_domino_H 3 2); (mk_domino_H 3 4); (mk_domino_H 3 6);
+  (mk_domino_H 4 0); (mk_domino_H 4 2); (mk_domino_H 4 4); (mk_domino_H 4 6);
+  (mk_domino_H 5 0); (mk_domino_H 5 2); (mk_domino_H 5 4); (mk_domino_H 5 6);
+  (mk_domino_H 6 0); (mk_domino_H 6 2); (mk_domino_H 6 4); (mk_domino_H 6 6);
+  (mk_domino_H 7 0); (mk_domino_H 7 2); (mk_domino_H 7 4); (mk_domino_H 7 6)].
+
+(** un temoin suffi *)
+Lemma classic_board_resoluble : resoluble plateau_base.
+Proof.
+  unfold resoluble.
+  exists sol_base.
+  simpl.
+  unfold pose_domino.
+  simpl.
+  reflexivity.
+Qed.
+
+
+Lemma ll : List.length plateau_coupe <> 0.
+Proof.
+  intro.
+  simpl in H.
+  discriminate.
+Qed.
+
+Lemma mutilated_board : ~ resoluble plateau_coupe.
+Proof.
+  intro.
+  destruct H.
+  unfold fold_left in H.
 Admitted.
