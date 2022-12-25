@@ -274,8 +274,12 @@ Eval compute in plateau_coupe.
    Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_coupe. (* false *)
  *)
 
-Definition pose_domino (d:domino) (p:plateau) : plateau :=
+Definition pose_domino (d : domino) (p : plateau) : plateau :=
   p \ fst (case_prise d) \ snd (case_prise d).
+
+Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
+  fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
+
 
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
@@ -775,13 +779,13 @@ Proof.
 Qed.
 
 (* Inductive resoluble (p : plateau) : Prop := *)
-  (* | axiome : List.length p = 0 -> resoluble p *)
-  (* | next : forall d, resoluble (pose_domino d p) -> resoluble p. *)
+(* | axiome : List.length p = 0 -> resoluble p *)
+(* | next : forall d, resoluble (pose_domino d p) -> resoluble p. *)
 
-(* Check List.fold_left. *)
 Definition resoluble (p : plateau) :=
-  exists dl : list domino, (List.fold_left (fun p d => pose_domino d p) dl p) = [].
+  exists dl : list domino, pose_dominos dl p = [].
 
+Print List.
 Definition sol_base :=
   [(mk_domino_H 0 0); (mk_domino_H 0 2); (mk_domino_H 0 4); (mk_domino_H 0 6);
   (mk_domino_H 1 0); (mk_domino_H 1 2); (mk_domino_H 1 4); (mk_domino_H 1 6);
@@ -811,9 +815,32 @@ Proof.
   discriminate.
 Qed.
 
+Lemma size_dom (x0 : list domino) :
+  forall dl : list domino,
+  forall p : plateau,
+  pose_dominos dl p = [] -> List.length dl * 2 = List.length p.
+Proof.
+  intros.
+Admitted.
+
+Require Import Lia.
+Lemma artih : forall x n, x >= 0 -> n >= 0 -> x * 2 = n -> x = n / 2.
+Proof.
+Admitted.
+  (* intros.
+  rewrite <- H1.
+  lia.
+Qed. *)
+
 Lemma mutilated_board : ~ resoluble plateau_coupe.
 Proof.
   intro.
   destruct H.
-  unfold fold_left in H.
+  assert (H1 : fold_left (fun (p : plateau) (d : domino) => pose_domino d p) x0 plateau_coupe = []); trivial.
+  apply (size_dom x0) in H1.
+  simpl in H1.
+  apply artih in H1; try lia.
+  { admit. }
+  (* { unfold fold_left in H.
+    discriminate. } *)
 Admitted.
