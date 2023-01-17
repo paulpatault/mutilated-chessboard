@@ -1,46 +1,61 @@
-Require Import Arith Nat List.
+Require Import Arith Nat List Lia.
 Import ListNotations.
 
-
+(** une case du plateau *)
 Record coord := mkCoord { x : nat; y : nat }.
 
+(** liste de cases *)
 Definition plateau := list coord.
 
+(** une case est soit blanche soit noire *)
 Inductive couleur := Blanc | Noir.
 
+(** négatif *)
 Definition neg_couleur c :=
   match c with
   | Blanc => Noir
   | Noir => Blanc
   end.
 
+(**
+ * un domino se pose peut être identifié par :
+ * - une case
+ * - le sens dans lequel il est posé
+ * exemple : Hauteur {0;0} occupe les cases {0;0} et {0;1}
+ *)
 Inductive domino :=
   | Hauteur : coord -> domino
   | Largeur : coord -> domino.
 
+(** case a droite de [c] *)
 Definition droite  (c : coord) := {| x := c.(x) + 1; y := c.(y) |}.
-(* Definition gauche  (c : coord) := {| x := c.(x) - 1; y := c.(y) |}. *)
-(* Definition dessus  (c : coord) := {| x := c.(x)    ; y := c.(y) - 1 |}. *)
+
+(** case en dessous de [c] *)
 Definition dessous (c : coord) := {| x := c.(x)    ; y := c.(y) + 1 |}.
 
-Definition case_prise : domino -> coord * coord := fun d =>
+(** pair des cases occupées par un domino *)
+Definition case_prise (d:domino) : coord * coord :=
   match d with
   | Hauteur c => (c, dessous c)
   | Largeur c => (c, droite c)
   end.
 
+(** une case est blanche si la somme de ses coordonnées est paire *)
 Definition case_blanche (c : coord) : Prop := Nat.Even (c.(x) + c.(y)).
-Definition case_noire   (c : coord) : Prop := Nat.Odd  (c.(x) + c.(y)).
+Definition est_blanche  (c : coord) : bool := even     (c.(x) + c.(y)).
 
+(** une case est noire si la somme de ses coordonnées est paire *)
+Definition case_noire (c : coord) : Prop := Nat.Odd (c.(x) + c.(y)).
+Definition est_noire  (c : coord) : bool := odd     (c.(x) + c.(y)).
+
+(** condiction pour que la case [c] soit de couleur [cc] *)
 Definition couleur_case (cc : couleur) (c : coord) : Prop :=
   match cc with
   | Blanc => Nat.Even (c.(x) + c.(y))
   | Noir  => Nat.Odd  (c.(x) + c.(y))
   end.
 
-Definition est_blanche (c : coord) : bool := even (c.(x) + c.(y)).
-Definition est_noire   (c : coord) : bool := odd (c.(x) + c.(y)).
-
+(** étant donnée la case [c], celle en dessous de [c] a la couleur opposée *)
 Lemma dessous_inv_col col c : couleur_case col c <-> couleur_case (neg_couleur col) (dessous c).
 Proof.
   split.
@@ -66,6 +81,7 @@ Proof.
   }
 Qed.
 
+(** étant donnée la case [c], celle à droite de [c] a la couleur opposée *)
 Lemma droite_inv_col col c : couleur_case col c -> couleur_case (neg_couleur col) (droite c).
 Proof.
   case col; unfold couleur_case; intro; simpl.
@@ -91,6 +107,7 @@ Proof.
     assumption.
 Qed.
 
+(** les cases prisent par un domino sont exactement une case blanche et une case noire *)
 Lemma domino_bicolor (d : domino) :
   (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
   (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
@@ -114,6 +131,7 @@ Proof.
     assumption.
 Qed.
 
+(** calcul le nombre de case de couleur [Blanc] sur un plateau [p] *)
 Fixpoint card_bl (p : plateau) :=
   match p with
   | [] => 0
@@ -123,6 +141,7 @@ Fixpoint card_bl (p : plateau) :=
       else card_bl t
   end.
 
+(** calcul le nombre de case de couleur [Noir] sur un plateau [p] *)
 Fixpoint card_no (p : plateau) :=
   match p with
   | [] => 0
@@ -132,19 +151,21 @@ Fixpoint card_no (p : plateau) :=
       else card_no t
   end.
 
+(** calcul le nombre de case de couleur [c] sur un plateau [p] *)
 Definition card (c : couleur) (p : plateau) :=
   match c with
   | Blanc => card_bl p
   | Noir  => card_no p
   end.
 
-
+(** la couleur d'une case est [Blanc] ou [Noir] *)
 Lemma bl_or_no : forall c: coord, couleur_case Blanc c \/ couleur_case Noir c.
 Proof.
   intro.
   eapply Nat.Even_or_Odd.
 Qed.
 
+(** une case [c] ne peut pas être de plusieurs couleurs *)
 Lemma bl_no_false_g : forall c col, couleur_case col c -> couleur_case (neg_couleur col) c -> False.
 Proof.
   intros c col H2 H3.
@@ -153,20 +174,21 @@ Proof.
     apply (Nat.Even_Odd_False (x c + y c)); assumption.
 Qed.
 
+(** si [c] est une case blanche alors [c] n'est pas une case noire *)
 Lemma bl_no_false : forall c: coord, case_blanche c -> ~ (case_noire c).
 Proof.
   intros c H1 H2.
   apply (Nat.Even_Odd_False (x c + y c)); assumption.
 Qed.
 
-(* Lemma bl_or_no2 (c : coord): case_blanche c \/ case_noire c. Proof. eapply Nat.Even_or_Odd. Qed. *)
-
+(** si [n] est pair, alors [n] n'est pas impair (dans Prop) *)
 Lemma even_xor_odd (n : nat) : Nat.Even n -> ~ (Nat.Odd n).
 Proof.
   intros H H1.
   apply Nat.Even_Odd_False with n; assumption.
 Qed.
 
+(** si [n] est pair, alors [n] n'est pas impair (dans Bool) *)
 Lemma even_to_not_odd (n:nat) : Nat.even n = true -> Nat.odd n = false.
 Proof.
   rewrite <- Nat.negb_odd.
@@ -175,6 +197,7 @@ Proof.
   assumption.
 Qed.
 
+(** [n] est impair est équivalent à [n] n'est pas pair (dans Bool) *)
 Lemma odd_to_not_even (n:nat) : Nat.odd n = true <-> Nat.even n = false.
 Proof.
   split.
@@ -188,6 +211,7 @@ Proof.
     assumption.
 Qed.
 
+(** factorisation de preuves *)
 Ltac casse_if col h :=
   unfold card;
   match col with
@@ -207,6 +231,9 @@ Ltac casse_if col h :=
     trivial
   end.
 
+(** la taille du plateau est égale
+ *  à la somme du nombre de ses cases blanches
+ *  et du nombre de ses cases noires *)
 Lemma sum_card_bl_no : forall p : plateau, card_bl p + card_no p = List.length p.
 Proof.
   induction p.
@@ -230,10 +257,10 @@ Proof.
   }
 Qed.
 
-(* Definition inf8 := forall n m : nat, n < 8 /\ m < 8. *)
-
 (**
-   ll n m = [ { 1; m } .. { n; m } ]
+ *  Fabrique une ligne d'un plateau
+ *  exemple :
+ *    mk_line n m = [ { 1; m } .. { n; m } ]
  *)
 Fixpoint mk_line (n m:nat) : list coord :=
   match n with
@@ -242,9 +269,11 @@ Fixpoint mk_line (n m:nat) : list coord :=
   end.
 
 (**
-   plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
+ *  construction d'un plateau « classique »
+ *  forme de carré [n] * [n]
+ *  exemple :
+ *    mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
  *)
-
 Fixpoint mk_plateau (n:nat) :=
   match n with
   | 0 => []
@@ -253,6 +282,7 @@ Fixpoint mk_plateau (n:nat) :=
   end.
 
 
+(** Plateau du problème original est un plateau d'échecs donc : 8x8 *)
 Definition plateau_base : plateau := mk_plateau 8.
 
 Eval compute in mk_plateau 8.
@@ -264,22 +294,25 @@ Defined.
 
 Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
 
+(** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
 Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
 
 Eval compute in plateau_coupe.
 
-  (* List.filter (fun e => negb (neq07 e)) plateau_base. *)
 (*
    Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_base.   (* true *)
    Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_coupe. (* false *)
  *)
 
+(** poser un domino [d] :
+ *  retirer les deux cases prisent par [d] dans la liste des cases du plateau
+ *)
 Definition pose_domino (d : domino) (p : plateau) : plateau :=
   p \ fst (case_prise d) \ snd (case_prise d).
 
+(** itérations consécutives de la fonction précédante *)
 Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
   fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
-
 
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
@@ -290,7 +323,7 @@ Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
 Eval compute in plateau_coupe.
 Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
 
-
+(** si on a deux cases différentes, les opérations [ajoute] et [retire] commutent *)
 Lemma rw_util col (a c : coord) (p : plateau) : a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
 Proof.
   intro.
@@ -360,7 +393,7 @@ Proof.
   }
 Qed.
 
-
+(** symmétrie de la différence *)
 Lemma diff_sym (a c : coord) : a <> c -> c <> a.
 Proof.
   intros H H1.
@@ -368,10 +401,11 @@ Proof.
   contradiction.
 Qed.
 
-
+(** Les listes sont un "modèle" pour un ensemble, on peut supposer le lemme suivant : *)
 Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p.
 
-
+(** Si on a une case blanche et qu'on l'ajoute à un plateau
+ *  alors le nombre de cases blanches du plateau augmente de 1 *)
 Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1.
 Proof.
   intro.
@@ -394,12 +428,14 @@ Proof.
     trivial.
 Qed.
 
+(** [Blanc] et l'inverse de [Noir] *)
 Lemma chg_color1 : Blanc = neg_couleur Noir.
 Proof.
   simpl.
   reflexivity.
 Qed.
 
+(** [Noir] et l'inverse de [Blanc] *)
 Lemma chg_color2 : Noir = neg_couleur Blanc.
 Proof.
   simpl.
@@ -496,12 +532,23 @@ Proof.
   }
 Qed.
 
+Lemma retire_case_bl (a : coord) (p: plateau) :
+  case_blanche a -> List.In a p -> card_bl (p \ a) = card_bl p - 1.
+Proof.
+  (* cas particulier du lemme au dessus *)
+Admitted.
+Lemma retire_case_no (a : coord) (p: plateau) :
+  case_blanche a -> List.In a p -> card_no (p \ a) = card_no p - 1.
+Proof.
+  (* cas particulier du lemme au dessus *)
+Admitted.
+
 Lemma retire_case_neg1 (a : coord) (p : plateau) :
   case_noire a -> card_bl (p \ a) = card_bl p.
 Proof.
   induction p.
   { auto. }
-  { intros.
+  { intro H.
     simpl.
     case (eq_coord a a0); intro.
     - rewrite IHp; trivial.
@@ -526,7 +573,7 @@ Lemma retire_case_neg2 (a : coord) (p : plateau) :
 Proof.
   induction p.
   { auto. }
-  { intros.
+  { intro H.
     simpl.
     case (eq_coord a a0); intro.
     - rewrite IHp; trivial.
@@ -546,6 +593,7 @@ Proof.
   }
 Qed.
 
+(** l'opération [remove] est commutative *)
 Lemma remove_assoc (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
 Proof.
   case (eq_coord a b).
@@ -582,6 +630,7 @@ Proof.
             * intro. rewrite IHp. trivial. } }
 Qed.
 
+(** raccourci *)
 Ltac apply_lemmas cp h f :=
   assert (H2_cpy : cp); trivial;
   apply h in H2_cpy;
@@ -589,11 +638,15 @@ Ltac apply_lemmas cp h f :=
   simpl;
   symmetry; rewrite f.
 
+(** Lemme important :
+ *  si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
+ *  [p] a exactement une case blanche de plus que [p']
+ *)
 Lemma invariant_blanc : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
   card Blanc p = card Blanc p' + 1.
 Proof.
-  intros.
+  intros p p' d H.
   case (domino_bicolor d).
   intros H0 H1.
   destruct d; simpl in *; destruct (bl_or_no c);
@@ -632,6 +685,7 @@ Proof.
     trivial. }
 Qed.
 
+(** une case ne peut pas être égale à la case en dessous d'elle même *)
 Lemma case_diff_dessous : forall c, c <> dessous c.
 Proof.
   intros c H.
@@ -648,6 +702,7 @@ Proof.
     eapply bl_no_false_g with c Noir; assumption.
 Qed.
 
+(** une case ne peut pas être égale à la case à sa droite *)
 Lemma case_diff_droite : forall c, c <> droite c.
 Proof.
   intros c H.
@@ -664,7 +719,8 @@ Proof.
     eapply bl_no_false_g with c Noir; assumption.
 Qed.
 
-
+(** comme [c] <> [droite c],
+    si [c] est dans [p] alors [c] est dans [p \ (droite c)]*)
 Lemma in_simp2_droite c p : In c p -> In c (remove eq_coord (droite c) p).
 Proof.
   intro.
@@ -675,6 +731,8 @@ Proof.
   - assumption.
 Qed.
 
+(** comme [c] <> [dessous c],
+    si [c] est dans [p] alors [c] est dans [p \ (dessous c)]*)
 Lemma in_simp2 c p : In c p -> In c (remove eq_coord (dessous c) p).
 Proof.
   intro.
@@ -685,6 +743,8 @@ Proof.
   - assumption.
 Qed.
 
+(** comme [c] <> [droite c],
+    si [droite c] est dans [p] alors [droite c] est dans [p \ c]*)
 Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (remove eq_coord c p).
 Proof.
   intro.
@@ -696,6 +756,8 @@ Proof.
   - assumption.
 Qed.
 
+(** comme [c] <> [dessous c],
+    si [dessous c] est dans [p] alors [dessous c] est dans [p \ c]*)
 Lemma in_simp c p : In (dessous c) p -> In (dessous c) (remove eq_coord c p).
 Proof.
   intro.
@@ -707,6 +769,7 @@ Proof.
   - assumption.
 Qed.
 
+(** raccourci, voir usage *)
 Ltac apply_lemmas_l cp h f :=
   assert (H2_cpy : cp); trivial;
   apply h in H2_cpy;
@@ -715,11 +778,15 @@ Ltac apply_lemmas_l cp h f :=
   symmetry;
   rewrite <- f.
 
+(** Lemme important :
+ *  si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
+ *  [p] a exactement une case noire de plus que [p']
+ *)
 Lemma invariant_noir : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
   card Noir p  = card Noir  p' + 1.
 Proof.
-  intros.
+  intros p p' d H.
   case (domino_bicolor d).
   intros H0 H1.
   destruct d; simpl in *; destruct (bl_or_no c);
@@ -755,23 +822,53 @@ Proof.
     - unfold case_blanche. assumption. }
 Qed.
 
+(** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
   card Blanc p = card Blanc p' + 1 /\
   card Noir p  = card Noir  p' + 1.
 Proof.
-  intros.
+  intros p p' d H.
   split.
   - apply (invariant_blanc p p' d); assumption.
   - apply (invariant_noir p p' d);  assumption.
 Qed.
 
+
+Lemma rw_util3 : forall d a p, pose_dominos d (pose_domino a p) = pose_dominos (a::d) p.
+Proof.
+  simpl.
+  reflexivity.
+Qed.
+
+(** combinaison des deux lemmes importants que l'on vient de définir *)
+Lemma invariant_pluriel : forall p p': plateau, forall dl: list domino,
+  pose_dominos dl p = p' ->
+  card Blanc p = card Blanc p' + (List.length dl) /\
+  card Noir p = card Noir p' + (List.length dl).
+Proof.
+  intros p p' d H.
+  destruct d.
+  { rewrite <- H. simpl. lia. }
+    { simpl in *.
+      rewrite rw_util3 in H.
+      rewrite <- H.
+      simpl.
+Admitted.
+(* TODO *)
+(* TODO *)
+(* TODO *)
+(* TODO *)
+(* TODO *)
+
+(** le plateau initial non mutilé contient autant de cases noires que de cases blanches *)
 Lemma card_base : card Noir plateau_base = card Blanc plateau_base.
 Proof.
   simpl.
   reflexivity.
 Qed.
 
+(** le plateau initial mutilé contient deux cases blanches de moins que son nombre de cases noires *)
 Lemma card_coupe : card Noir plateau_coupe = card Blanc plateau_coupe + 2.
 Proof.
   simpl.
@@ -782,21 +879,165 @@ Qed.
 (* | axiome : List.length p = 0 -> resoluble p *)
 (* | next : forall d, resoluble (pose_domino d p) -> resoluble p. *)
 
+
+(** une liste de dominos « résout » un plateau si une fois que l'on les a tous posé,
+    la liste représentant le plateau est vide *)
+Definition solution (p : plateau) (dl : list domino) :=
+  pose_dominos dl p = [].
+
+(** un définition possible de la résolubilité d'un plateau
+ *  un plateau est résoluble s'il existe un liste de domino
+ *  telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
-  exists dl : list domino, pose_dominos dl p = [].
+  exists dl : list domino, solution p dl.
 
-Print List.
+(** le plateau_coupe n'est pas vide *)
+Lemma ll : List.length plateau_coupe <> 0.
+Proof.
+  intro.
+  simpl in H.
+  discriminate.
+Qed.
+
+(** la liste des dominos a exactement la longueur de la moitié de la liste représentant le plateau *)
+Lemma size_dom (x0 : list domino) :
+  forall dl : list domino,
+  forall p : plateau,
+  pose_dominos dl p = [] -> List.length dl * 2 = List.length p.
+Proof.
+  intros.
+Admitted.
+
+(****************************** { Arith Utils } ******************************)
+Lemma arith : forall n, n = n * 2 / 2.
+Proof.
+  intro.
+  rewrite Nat.div_mul; auto.
+Qed.
+
+Lemma a : forall x n, x >= 0 -> n >= 0 -> x * 2 = n -> x = n / 2.
+Proof.
+  intros.
+  rewrite arith in H1.
+  simpl in H1.
+Admitted.
+
+
+(****************************** { Main Lemma  } ******************************)
+
+Lemma auxaux : forall n m, Nat.Even (n + m) -> Nat.Odd (n + (m + 1)).
+Proof.
+  destruct n.
+  + simpl.
+    admit.
+  + simpl.
+    intros.
+    admit.
+Admitted.
+
+
+Lemma rw_util4 : forall d p,
+  card_no (pose_domino d p) = card_bl (pose_domino d p) ->
+  card_no p = card_bl p.
+Proof.
+  (* case (bl_or_no a0). *)
+  intros d p.
+  case d; intros c H.
+  { unfold pose_domino in H.
+    simpl in H.
+    case (bl_or_no c); intro col.
+    - rewrite retire_case_neg1 in H.
+      rewrite remove_assoc in H.
+      rewrite retire_case_neg2 in H.
+      + 
+        rewrite (retire_case_bl c p) in H.
+        * rewrite (retire_case_no c p) in H.
+        unfold couleur_case in col.
+
+
+        (*
+Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
+couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p. *)
+        (* unfold dessous. *)
+        (* unfold case_noire. *)
+        simpl.
+        apply Nat.odd_spec.
+        apply Nat.even_spec in col.
+      + unfold couleur_case in col. unfold case_blanche. assumption.
+      + unfold couleur_case in col. unfold case_noire. unfold dessous.
+        simpl.
+        apply auxaux.
+        assumption.
+    -
+
+      (* Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
+  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p. *)
+
+
+Admitted.
+
+
+Lemma resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
+Proof.
+  intros p H.
+  destruct H.
+  unfold solution in H.
+  induction x0; simpl in *.
+  { rewrite H. simpl. reflexivity. }
+  { apply invariant_pluriel in H.
+    simpl in H.
+    destruct H.
+    rewrite <- H in H0.
+    eapply rw_util4 with a0.
+    assumption. }
+Qed.
+
+Lemma mutilated_board : ~ resoluble plateau_coupe.
+Proof.
+  intro.
+  apply resoluble_invariant in H.
+  rewrite card_coupe in H.
+  lia.
+Qed.
+
+(* Lemma mutilated_board : ~ resoluble plateau_coupe.
+Proof.
+  intro.
+  destruct H.
+  assert (H1 : fold_left (fun (p : plateau) (d : domino) => pose_domino d p) x0 plateau_coupe = []); trivial.
+  apply (size_dom x0) in H1.
+  simpl in H1.
+  assert (length x0 = 31). lia.
+  apply a in H1; try lia.
+  (* { unfold fold_left in H.
+    discriminate. } *)
+Admitted. *)
+
+
+(**************************** { Classical board } ****************************)
+
+(** fonctions de liste *)
+
+Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
+  match len with
+  | 0 => []
+  | S len =>
+      (f i) :: init_aux (i+1) len f
+  end.
+
+Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
+  init_aux 0 n f.
+
+
+(** définition de la solution pour l'échiquier non mutilé *)
 Definition sol_base :=
-  [(mk_domino_H 0 0); (mk_domino_H 0 2); (mk_domino_H 0 4); (mk_domino_H 0 6);
-  (mk_domino_H 1 0); (mk_domino_H 1 2); (mk_domino_H 1 4); (mk_domino_H 1 6);
-  (mk_domino_H 2 0); (mk_domino_H 2 2); (mk_domino_H 2 4); (mk_domino_H 2 6);
-  (mk_domino_H 3 0); (mk_domino_H 3 2); (mk_domino_H 3 4); (mk_domino_H 3 6);
-  (mk_domino_H 4 0); (mk_domino_H 4 2); (mk_domino_H 4 4); (mk_domino_H 4 6);
-  (mk_domino_H 5 0); (mk_domino_H 5 2); (mk_domino_H 5 4); (mk_domino_H 5 6);
-  (mk_domino_H 6 0); (mk_domino_H 6 2); (mk_domino_H 6 4); (mk_domino_H 6 6);
-  (mk_domino_H 7 0); (mk_domino_H 7 2); (mk_domino_H 7 4); (mk_domino_H 7 6)].
+  List.concat
+  (init 8 (fun j =>
+  init 4 (fun i => mk_domino_H j (i*2)))).
 
-(** un temoin suffi *)
+(* Eval compute in sol_base. *)
+
+(** la solution fonctionne bien *)
 Lemma classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
@@ -806,41 +1047,3 @@ Proof.
   simpl.
   reflexivity.
 Qed.
-
-
-Lemma ll : List.length plateau_coupe <> 0.
-Proof.
-  intro.
-  simpl in H.
-  discriminate.
-Qed.
-
-Lemma size_dom (x0 : list domino) :
-  forall dl : list domino,
-  forall p : plateau,
-  pose_dominos dl p = [] -> List.length dl * 2 = List.length p.
-Proof.
-  intros.
-Admitted.
-
-Require Import Lia.
-Lemma artih : forall x n, x >= 0 -> n >= 0 -> x * 2 = n -> x = n / 2.
-Proof.
-Admitted.
-  (* intros.
-  rewrite <- H1.
-  lia.
-Qed. *)
-
-Lemma mutilated_board : ~ resoluble plateau_coupe.
-Proof.
-  intro.
-  destruct H.
-  assert (H1 : fold_left (fun (p : plateau) (d : domino) => pose_domino d p) x0 plateau_coupe = []); trivial.
-  apply (size_dom x0) in H1.
-  simpl in H1.
-  apply artih in H1; try lia.
-  { admit. }
-  (* { unfold fold_left in H.
-    discriminate. } *)
-Admitted.
