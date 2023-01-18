@@ -18,10 +18,10 @@ Definition neg_couleur c :=
   end.
 
 (**
- * un domino se pose peut être identifié par :
- * - une case
- * - le sens dans lequel il est posé
- * exemple : Hauteur {0;0} occupe les cases {0;0} et {0;1}
+  un domino se pose peut être identifié par :
+  - une case
+  - le sens dans lequel il est posé
+  exemple : Hauteur {0;0} occupe les cases {0;0} et {0;1}
  *)
 Inductive domino :=
   | Hauteur : coord -> domino
@@ -217,8 +217,8 @@ Ltac casse_if col h :=
 
 (* TODO *)
 (** la taille du plateau est égale
- *  à la somme du nombre de ses cases blanches
- *  et du nombre de ses cases noires *)
+    à la somme du nombre de ses cases blanches
+    et du nombre de ses cases noires *)
 Lemma sum_card_bl_no : forall p : plateau, card_bl p + card_no p = List.length p.
 Proof.
   induction p.
@@ -243,9 +243,9 @@ Proof.
 Qed.
 
 (**
- *  Fabrique une ligne d'un plateau
- *  exemple :
- *    mk_line n m = [ { 1; m } .. { n; m } ]
+   Fabrique une ligne d'un plateau
+   exemple :
+     mk_line n m = [ { 1; m } .. { n; m } ]
  *)
 Fixpoint mk_line (n m:nat) : list coord :=
   match n with
@@ -254,10 +254,10 @@ Fixpoint mk_line (n m:nat) : list coord :=
   end.
 
 (**
- *  construction d'un plateau « classique »
- *  forme de carré [n] * [n]
- *  exemple :
- *    mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
+   construction d'un plateau « classique »
+   forme de carré [n] * [n]
+   exemple :
+     mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
  *)
 Fixpoint mk_plateau (n:nat) :=
   match n with
@@ -289,9 +289,7 @@ Eval compute in plateau_coupe.
    Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_coupe. (* false *)
  *)
 
-(** poser un domino [d] :
- *  retirer les deux cases prisent par [d] dans la liste des cases du plateau
- *)
+(** poser un domino [d] : retirer les deux cases prisent par [d] dans la liste des cases du plateau *)
 Definition pose_domino (d : domino) (p : plateau) : plateau :=
   p \ fst (case_prise d) \ snd (case_prise d).
 
@@ -391,7 +389,7 @@ Qed.
 Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p.
 
 (** Si on a une case blanche et qu'on l'ajoute à un plateau
- *  alors le nombre de cases blanches du plateau augmente de 1 *)
+    alors le nombre de cases blanches du plateau augmente de 1 *)
 Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1.
 Proof.
   intro.
@@ -614,8 +612,8 @@ Ltac apply_lemmas cp h f :=
   symmetry; rewrite f.
 
 (** Lemme important :
- *  si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
- *  [p] a exactement une case blanche de plus que [p']
+    si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
+    [p] a exactement une case blanche de plus que [p']
  *)
 Lemma invariant_blanc : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
@@ -754,8 +752,8 @@ Ltac apply_lemmas_l cp h f :=
   rewrite <- f.
 
 (** Lemme important :
- *  si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
- *  [p] a exactement une case noire de plus que [p']
+    si [p'] est le plateau [p] sur lequel on a posé le domino [d], alors
+    [p] a exactement une case noire de plus que [p']
  *)
 Lemma invariant_noir : forall p p': plateau, forall d: domino,
   p' = pose_domino d p ->
@@ -830,8 +828,8 @@ Definition solution (p : plateau) (dl : list domino) :=
   pose_dominos dl p = [].
 
 (** un définition possible de la résolubilité d'un plateau
- *  un plateau est résoluble s'il existe un liste de domino
- *  telle que lorsque les domino seront posés le plateau sera vide *)
+    un plateau est résoluble s'il existe un liste de domino
+    telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
   exists dl : list domino, solution p dl.
 

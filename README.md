@@ -76,7 +76,7 @@ L'échiquer est représenté par un ensemble de cases :
   Corollary mutilated_board : ~ resoluble plateau_coupé.
   ```
 
-### Ensemble des hypothèses
+<!-- ### Ensemble des hypothèses
 
 - hypothèses relative a l'ensemble représenté par une liste
-- on fait aussi l'hypothèse que lorsque l'on pose un domino, celui-ci peut être posé : il ne va pas dans le vide
+- on fait aussi l'hypothèse que lorsque l'on pose un domino, celui-ci peut être posé : il ne va pas dans le vide -->
