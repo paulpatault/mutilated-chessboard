@@ -520,6 +520,8 @@ Proof.
   }
 Qed.
 
+Hint Resolve retire_case.
+
 (** si on retire une case de la couleur que l'on ne compte pas
     alors le compte n'a pas changé *)
 Lemma retire_case_neg1 (a : coord) (p : plateau) :
@@ -547,6 +549,8 @@ Proof.
   }
 Qed.
 
+Hint Resolve retire_case_neg1.
+
 (** si on retire une case de la couleur que l'on ne compte pas
     alors le compte n'a pas changé *)
 Lemma retire_case_neg2 (a : coord) (p : plateau) :
@@ -573,6 +577,8 @@ Proof.
         assumption.
   }
 Qed.
+
+Hint Resolve retire_case_neg2.
 
 (** l'opération [remove] est commutative *)
 Lemma remove_assoc (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
@@ -750,6 +756,11 @@ Proof.
   - assumption.
 Qed.
 
+Hint Resolve in_simp.
+Hint Resolve in_simp2.
+Hint Resolve in_simp_droite.
+Hint Resolve in_simp2_droite.
+
 (** raccourci, voir usage *)
 Ltac apply_lemmas_l cp h f :=
   assert (H2_cpy : cp); trivial;
@@ -894,9 +905,73 @@ Qed.
 Lemma rw_util4 : forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Admitted.
 
+
 (* TODO *)
 Lemma retire_domino : forall p d col, card col p = S (card col (pose_domino d p)).
-Admitted.
+Proof.
+  intros p d col.
+  pose (H := rm_iff_mem p (pose_domino d p) d eq_refl).
+  destruct H as (H1 & H2).
+  case_eq d;
+      intros c rw_d;
+      rewrite rw_d in H1, H2;
+      unfold pose_domino;
+      case col;
+      simpl in *;
+      case (bl_or_no c);
+      intro col_c.
+  {
+    pose (H := dessous_inv_col Blanc c).
+    destruct H as (H & HH). clear HH.
+    pose (col_d_c := H col_c).
+    assert (couleur_case Noir (dessous c)); auto.
+    clear col_d_c.
+    rewrite retire_case_neg1; auto.
+    rewrite <- Nat.add_1_r.
+    symmetry.
+    auto using (retire_case Blanc).
+  }
+  {
+    rewrite <- Nat.add_1_r.
+    rewrite (retire_case Blanc); auto.
+    + simpl.
+      rewrite (retire_case_neg1 c);
+      auto.
+    + apply dessous_inv_col in col_c.
+      auto.
+  }
+  {
+    pose (H := dessous_inv_col Blanc c).
+    destruct H as (H & HH). clear HH.
+    pose (col_d_c := H col_c).
+    assert (couleur_case Noir (dessous c)); auto.
+    clear col_d_c.
+    rewrite <- Nat.add_1_r.
+    symmetry.
+    rewrite (retire_case Noir); auto.
+  }
+  {
+    symmetry.
+    rewrite <- Nat.add_1_r.
+    rewrite (retire_case_neg2).
+    assert (col_d_c := col_c).
+    apply dessous_inv_col in col_d_c.
+
+  }
+
+
+p : plateau
+d : domino
+col : couleur
+c : coord
+H1 : In c p
+H2 : In (dessous c) p
+rw_d : d = Hauteur c
+col_c : couleur_case Noir c
+
+========================= (1 / 1)
+
+card_bl p = S (card_bl (remove eq_coord (dessous c) (remove eq_coord c p)))
 
 (** arithmétique *)
 Lemma min_b_both_sides : forall a b c, a = c + 1 -> a + b = c + S b. Proof. lia. Qed.
