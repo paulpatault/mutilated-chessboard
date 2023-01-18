@@ -1,6 +1,13 @@
 Require Import Arith Nat List Lia.
 Import ListNotations.
 
+(** arithmétique *)
+Lemma min_b_both_sides : forall a b c, a = c + 1 -> a + b = c + S b. Proof. lia. Qed.
+
+(*****************************************************************************************)
+(******************************** { Définitions de base } ********************************)
+(*****************************************************************************************)
+
 (** une case du plateau *)
 Record coord := mkCoord { x : nat; y : nat }.
 
@@ -53,82 +60,6 @@ Definition couleur_case (cc : couleur) (c : coord) : Prop :=
   | Noir  => Nat.Odd  (c.(x) + c.(y))
   end.
 
-(** étant donnée la case [c], celle en dessous de [c] a la couleur opposée *)
-Lemma dessous_inv_col col c : couleur_case col c <-> couleur_case (neg_couleur col) (dessous c).
-Proof.
-  split.
-  { case col; unfold couleur_case; intro; simpl; rewrite Nat.add_assoc; rewrite Nat.add_1_r.
-    - apply Nat.odd_spec.
-      rewrite Nat.odd_succ.
-      apply Nat.even_spec.
-      assumption.
-    - apply Nat.even_spec.
-      rewrite Nat.even_succ.
-      apply Nat.odd_spec.
-      assumption.
-  }
-  { case col; unfold couleur_case; intro; simpl in *; rewrite Nat.add_assoc in H; rewrite Nat.add_1_r in H.
-    - apply Nat.odd_spec in H.
-      rewrite Nat.odd_succ in H.
-      apply Nat.even_spec.
-      assumption.
-    - apply Nat.even_spec in H.
-      rewrite Nat.even_succ in H.
-      apply Nat.odd_spec.
-      assumption.
-  }
-Qed.
-
-(** étant donnée la case [c], celle à droite de [c] a la couleur opposée *)
-Lemma droite_inv_col col c : couleur_case col c -> couleur_case (neg_couleur col) (droite c).
-Proof.
-  case col; unfold couleur_case; intro; simpl.
-  - rewrite <- Nat.add_assoc.
-    rewrite Nat.add_comm.
-    rewrite <- Nat.add_assoc.
-    rewrite Nat.add_comm.
-    apply Nat.odd_spec.
-    rewrite Nat.add_1_r.
-    rewrite Nat.odd_succ.
-    apply Nat.even_spec.
-    rewrite Nat.add_comm.
-    assumption.
-  - rewrite <- Nat.add_assoc.
-    rewrite Nat.add_comm.
-    rewrite <- Nat.add_assoc.
-    rewrite Nat.add_comm.
-    apply Nat.even_spec.
-    rewrite Nat.add_1_r.
-    rewrite Nat.even_succ.
-    apply Nat.odd_spec.
-    rewrite Nat.add_comm.
-    assumption.
-Qed.
-
-(** les cases prisent par un domino sont exactement une case blanche et une case noire *)
-Lemma domino_bicolor (d : domino) :
-  (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
-  (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
-Proof.
-  split; destruct d; unfold case_prise; simpl; intro.
-  - eapply (dessous_inv_col Blanc).
-    unfold couleur_case.
-    unfold case_blanche in H.
-    assumption.
-  - eapply (droite_inv_col Blanc).
-    unfold couleur_case.
-    unfold case_blanche in H.
-    assumption.
-  - eapply (dessous_inv_col Noir).
-    unfold couleur_case.
-    unfold case_noire in H.
-    assumption.
-  - eapply (droite_inv_col Noir).
-    unfold couleur_case.
-    unfold case_noire in H.
-    assumption.
-Qed.
-
 (** calcul le nombre de case de couleur [Blanc] sur un plateau [p] *)
 Fixpoint card_bl (p : plateau) :=
   match p with
@@ -156,6 +87,212 @@ Definition card (c : couleur) (p : plateau) :=
   | Noir  => card_no p
   end.
 
+(**
+   Fabrique une ligne d'un plateau
+   exemple :
+     mk_line n m = [ { 1; m } .. { n; m } ]
+ *)
+Fixpoint mk_line (n m:nat) : list coord :=
+  match n with
+  | 0 => []
+  | S n => {| x := n; y := m |} :: (mk_line n m)
+  end.
+
+(**
+   construction d'un plateau « classique »
+   forme de carré [n] * [n]
+   exemple :
+     mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
+ *)
+Fixpoint mk_plateau (n:nat) :=
+  match n with
+  | 0 => []
+  | S n =>
+      (mk_line 8 n) ++ (mk_plateau n)
+  end.
+
+
+(** Plateau du problème original est un plateau d'échecs donc : 8x8 *)
+Definition plateau_base : plateau := mk_plateau 8.
+
+Eval compute in mk_plateau 8.
+
+(** égalité entre coordonnées décidable *)
+Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
+Proof.
+  decide equality; decide equality.
+Defined.
+
+(** notation à la \setminus *)
+Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
+
+(** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
+Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
+
+Eval compute in plateau_coupe.
+
+(** poser un domino [d] :
+      retirer les deux cases prisent par [d] dans la liste des cases du plateau *)
+Definition pose_domino (d : domino) (p : plateau) : plateau :=
+  p \ fst (case_prise d) \ snd (case_prise d).
+
+(** itérations consécutives de la fonction précédante *)
+Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
+  fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
+
+(** hyp : lorsque l'on écrit [pose_domino d p] on suppose
+          toujours que [p] contient [case_prises d] *)
+Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
+  (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
+
+Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
+Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
+
+Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
+
+(*****************************************************************************************)
+(***************************** { Critère de résolubilité  } ******************************)
+(*****************************************************************************************)
+
+(** une liste de dominos « résout » un plateau si une fois que l'on les a tous posé,
+    la liste représentant le plateau est vide *)
+Definition solution (p : plateau) (dl : list domino) :=
+  pose_dominos dl p = [].
+
+(** un définition possible de la résolubilité d'un plateau
+    un plateau est résoluble s'il existe un liste de domino
+    telle que lorsque les domino seront posés le plateau sera vide *)
+Definition resoluble (p : plateau) :=
+  exists dl : list domino, solution p dl.
+
+
+(*****************************************************************************************)
+(********************************* { Classical board } ***********************************)
+(*****************************************************************************************)
+
+(** fonctions de liste *)
+Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
+  match len with
+  | 0 => []
+  | S len =>
+      (f i) :: init_aux (i+1) len f
+  end.
+
+Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
+  init_aux 0 n f.
+
+(** définition de la solution pour l'échiquier non mutilé *)
+Definition sol_base :=
+  List.concat
+  (init 8 (fun j =>
+  init 4 (fun i => mk_domino_H j (i*2)))).
+
+(* Eval compute in sol_base. *)
+
+(** la solution fonctionne bien *)
+Theorem classic_board_resoluble : resoluble plateau_base.
+Proof.
+  unfold resoluble.
+  exists sol_base.
+  simpl.
+  unfold pose_domino.
+  simpl.
+  reflexivity.
+Qed.
+
+(*****************************************************************************************)
+(************************************ { Lemmes } *****************************************)
+(*****************************************************************************************)
+
+(** étant donnée la case [c], celle en dessous de [c] a la couleur opposée *)
+Lemma dessous_inv_col col c :
+  couleur_case col c <-> couleur_case (neg_couleur col) (dessous c).
+Proof.
+  split.
+  { case col;
+    unfold couleur_case;
+    intro;
+    simpl;
+    rewrite Nat.add_assoc;
+    rewrite Nat.add_1_r.
+    - apply Nat.odd_spec.
+      rewrite Nat.odd_succ.
+      apply Nat.even_spec.
+      assumption.
+    - apply Nat.even_spec.
+      rewrite Nat.even_succ.
+      apply Nat.odd_spec.
+      assumption.
+  }
+  { case col;
+    unfold couleur_case;
+    intro;
+    simpl in *;
+    rewrite Nat.add_assoc in H;
+    rewrite Nat.add_1_r in H.
+    - apply Nat.odd_spec in H.
+      rewrite Nat.odd_succ in H.
+      apply Nat.even_spec.
+      assumption.
+    - apply Nat.even_spec in H.
+      rewrite Nat.even_succ in H.
+      apply Nat.odd_spec.
+      assumption.
+  }
+Qed.
+
+(** étant donnée la case [c], celle à droite de [c] a la couleur opposée *)
+Lemma droite_inv_col col c :
+  couleur_case col c -> couleur_case (neg_couleur col) (droite c).
+Proof.
+  case col; unfold couleur_case; intro; simpl.
+  - rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    apply Nat.odd_spec.
+    rewrite Nat.add_1_r.
+    rewrite Nat.odd_succ.
+    apply Nat.even_spec.
+    rewrite Nat.add_comm.
+    assumption.
+  - rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    rewrite <- Nat.add_assoc.
+    rewrite Nat.add_comm.
+    apply Nat.even_spec.
+    rewrite Nat.add_1_r.
+    rewrite Nat.even_succ.
+    apply Nat.odd_spec.
+    rewrite Nat.add_comm.
+    assumption.
+Qed.
+
+(** les cases prisent par un domino sont exactement
+    une case blanche et une case noire *)
+Lemma domino_bicolor (d : domino) :
+  (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
+  (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
+Proof.
+  split; destruct d; unfold case_prise; simpl; intro.
+  - eapply (dessous_inv_col Blanc).
+    unfold couleur_case.
+    unfold case_blanche in H.
+    assumption.
+  - eapply (droite_inv_col Blanc).
+    unfold couleur_case.
+    unfold case_blanche in H.
+    assumption.
+  - eapply (dessous_inv_col Noir).
+    unfold couleur_case.
+    unfold case_noire in H.
+    assumption.
+  - eapply (droite_inv_col Noir).
+    unfold couleur_case.
+    unfold case_noire in H.
+    assumption.
+Qed.
+
 (** la couleur d'une case est [Blanc] ou [Noir] *)
 Lemma bl_or_no : forall c: coord, couleur_case Blanc c \/ couleur_case Noir c.
 Proof.
@@ -164,7 +301,10 @@ Proof.
 Qed.
 
 (** une case [c] ne peut pas être de plusieurs couleurs *)
-Lemma bl_no_false_g : forall c col, couleur_case col c -> couleur_case (neg_couleur col) c -> False.
+Lemma bl_no_false_g :
+  forall c col, couleur_case col c ->
+                couleur_case (neg_couleur col) c ->
+                False.
 Proof.
   intros c col H2 H3.
   destruct col;
@@ -215,101 +355,9 @@ Ltac casse_if col h :=
     trivial
   end.
 
-(** la taille du plateau est égale
-    à la somme du nombre de ses cases blanches
-    et du nombre de ses cases noires *)
-Lemma sum_card_bl_no : forall p : plateau, card_bl p + card_no p = List.length p.
-Proof.
-  induction p.
-  { simpl. reflexivity. }
-  { simpl.
-    destruct (bl_or_no a).
-    + casse_if Blanc H.
-      apply even_to_not_odd in H.
-      rewrite H.
-      simpl.
-      apply Nat.succ_inj_wd.
-      assumption.
-    + casse_if Noir H.
-      apply odd_to_not_even in H.
-      rewrite H.
-      rewrite Nat.add_comm.
-      simpl.
-      apply Nat.succ_inj_wd.
-      rewrite Nat.add_comm.
-      assumption.
-  }
-Qed.
-
-(**
-   Fabrique une ligne d'un plateau
-   exemple :
-     mk_line n m = [ { 1; m } .. { n; m } ]
- *)
-Fixpoint mk_line (n m:nat) : list coord :=
-  match n with
-  | 0 => []
-  | S n => {| x := n; y := m |} :: (mk_line n m)
-  end.
-
-(**
-   construction d'un plateau « classique »
-   forme de carré [n] * [n]
-   exemple :
-     mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
- *)
-Fixpoint mk_plateau (n:nat) :=
-  match n with
-  | 0 => []
-  | S n =>
-      (mk_line 8 n) ++ (mk_plateau n)
-  end.
-
-
-(** Plateau du problème original est un plateau d'échecs donc : 8x8 *)
-Definition plateau_base : plateau := mk_plateau 8.
-
-Eval compute in mk_plateau 8.
-
-(** égalité entre coordonnées décidable *)
-Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
-Proof.
-  decide equality; decide equality.
-Defined.
-
-(** notation à la \setminus *)
-Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
-
-(** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
-Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
-
-Eval compute in plateau_coupe.
-
-(*
-   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_base.   (* true *)
-   Eval compute in mem eq_coord {| x := 0; y := 0 |} plateau_coupe. (* false *)
- *)
-
-(** poser un domino [d] : retirer les deux cases prisent par [d] dans la liste des cases du plateau *)
-Definition pose_domino (d : domino) (p : plateau) : plateau :=
-  p \ fst (case_prise d) \ snd (case_prise d).
-
-(** itérations consécutives de la fonction précédante *)
-Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
-  fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
-
-(** hyp : lorsque l'on écrit [pose_domino d p] on suppose toujours que [p] contient [case_prises d] *)
-Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
-  (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
-
-Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
-Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
-
-Eval compute in plateau_coupe.
-Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
-
 (** si on a deux cases différentes, les opérations [ajoute] et [retire] commutent *)
-Lemma rw_util col (a c : coord) (p : plateau) : a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
+Lemma rw_util col (a c : coord) (p : plateau) :
+  a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
 Proof.
   intro.
   induction p.
@@ -404,8 +452,10 @@ Proof.
 Qed.
 
 (** si [a] est une case de couleur [col],
-    alors [a] ne pèse pas dans le compte des cases de couleurs [neg col]*)
-Lemma cons_card_neq col a p : couleur_case col a -> card (neg_couleur col) (a :: p) = card (neg_couleur col) p.
+    alors [a] ne pèse pas dans le compte des cases de couleurs [neg col] *)
+Lemma cons_card_neq col a p :
+  couleur_case col a ->
+  card (neg_couleur col) (a :: p) = card (neg_couleur col) p.
 Proof.
   intro.
   destruct col; simpl; unfold couleur_case in H;
@@ -429,8 +479,11 @@ Proof.
   reflexivity.
 Qed.
 
-(** ajouter la même case à deux plateau ne change rien à l'égalité entre les comptes de couleurs *)
-Lemma card_eq_hdS col a p p' : card col p + 1 = card col p' -> card col (a :: p) + 1 = card col (a :: p').
+(** ajouter la même case à deux plateau ne change rien
+    à l'égalité entre les comptes de couleurs *)
+Lemma card_eq_hdS col a p p' :
+  card col p + 1 = card col p' ->
+  card col (a :: p) + 1 = card col (a :: p').
 Proof.
   intro.
   destruct col; case (bl_or_no a); intro.
@@ -832,59 +885,13 @@ Proof.
   reflexivity.
 Qed.
 
-(** le plateau initial mutilé contient deux cases blanches de moins que son nombre de cases noires *)
+(** le plateau initial mutilé contient deux cases blanches
+    de moins que son nombre de cases noires *)
 Lemma card_coupe : card Noir plateau_coupe = card Blanc plateau_coupe + 2.
 Proof.
   simpl.
   reflexivity.
 Qed.
-
-(*********************** { Critère de résolubilité  } ************************)
-
-(** une liste de dominos « résout » un plateau si une fois que l'on les a tous posé,
-    la liste représentant le plateau est vide *)
-Definition solution (p : plateau) (dl : list domino) :=
-  pose_dominos dl p = [].
-
-(** un définition possible de la résolubilité d'un plateau
-    un plateau est résoluble s'il existe un liste de domino
-    telle que lorsque les domino seront posés le plateau sera vide *)
-Definition resoluble (p : plateau) :=
-  exists dl : list domino, solution p dl.
-
-(**************************** { Classical board } ****************************)
-
-(** fonctions de liste *)
-Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
-  match len with
-  | 0 => []
-  | S len =>
-      (f i) :: init_aux (i+1) len f
-  end.
-
-Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
-  init_aux 0 n f.
-
-(** définition de la solution pour l'échiquier non mutilé *)
-Definition sol_base :=
-  List.concat
-  (init 8 (fun j =>
-  init 4 (fun i => mk_domino_H j (i*2)))).
-
-(* Eval compute in sol_base. *)
-
-(** la solution fonctionne bien *)
-Theorem classic_board_resoluble : resoluble plateau_base.
-Proof.
-  unfold resoluble.
-  exists sol_base.
-  simpl.
-  unfold pose_domino.
-  simpl.
-  reflexivity.
-Qed.
-
-(**************************** { Mutilated Board  } ***************************)
 
 Lemma pose_domino_dont_change_card : forall d p,
   card_no (pose_domino d p) = card_bl (pose_domino d p) ->
@@ -902,11 +909,15 @@ Qed.
 
 (* idée : montrer que l'ordre ne compte pas *)
 (* TODO *)
-Lemma rw_util4 : forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+Lemma rw_util4 :
+  forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Admitted.
 
 
-(* TODO *)
+(** [Lemma retire_domino] : poser un domino sur un plateau
+                            retire une case de chaque couleur
+    remarque : les preuves des 8 sous cas sont très proches
+               mais je n'ai pas réussi à les factoriser *)
 Lemma retire_domino : forall p d col, card col p = S (card col (pose_domino d p)).
 Proof.
   intros p d col.
@@ -951,33 +962,58 @@ Proof.
     rewrite (retire_case Noir); auto.
   }
   {
-    symmetry.
     rewrite <- Nat.add_1_r.
     rewrite (retire_case_neg2).
     assert (col_d_c := col_c).
     apply dessous_inv_col in col_d_c.
-
+    rewrite (retire_case Noir); auto.
+    apply dessous_inv_col in col_c.
+    auto.
   }
+  {
+    pose (H := droite_inv_col Blanc c).
+    pose (col_d_c := H col_c).
+    assert (couleur_case Noir (droite c)); auto.
+    clear col_d_c.
+    rewrite retire_case_neg1; auto.
+    rewrite <- Nat.add_1_r.
+    symmetry.
+    auto using (retire_case Blanc).
+  }
+  {
+    rewrite <- Nat.add_1_r.
+    rewrite (retire_case Blanc); auto.
+    + simpl.
+      rewrite (retire_case_neg1 c);
+      auto.
+    + apply droite_inv_col in col_c.
+      auto.
+  }
+  {
+    pose (H := droite_inv_col Blanc c).
+    (* destruct H as (H & HH). clear HH. *)
+    pose (col_d_c := H col_c).
+    assert (couleur_case Noir (droite c)); auto.
+    clear col_d_c.
+    rewrite <- Nat.add_1_r.
+    symmetry.
+    rewrite (retire_case Noir); auto.
+  }
+  {
+    rewrite <- Nat.add_1_r.
+    rewrite (retire_case_neg2).
+    assert (col_d_c := col_c).
+    apply droite_inv_col in col_d_c.
+    rewrite (retire_case Noir); auto.
+    apply droite_inv_col in col_c.
+    auto.
+  }
+Qed.
 
-
-p : plateau
-d : domino
-col : couleur
-c : coord
-H1 : In c p
-H2 : In (dessous c) p
-rw_d : d = Hauteur c
-col_c : couleur_case Noir c
-
-========================= (1 / 1)
-
-card_bl p = S (card_bl (remove eq_coord (dessous c) (remove eq_coord c p)))
-
-(** arithmétique *)
-Lemma min_b_both_sides : forall a b c, a = c + 1 -> a + b = c + S b. Proof. lia. Qed.
 
 (** retirer [N] dominos = retirer [N] cases [blanches|noires] *)
-Lemma rm_add_b: forall p col dl, card col p = card col (pose_dominos dl p) + length dl.
+Lemma rm_add_b :
+  forall p col dl, card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
   { simpl. trivial. }
@@ -993,8 +1029,13 @@ Proof.
   }
 Qed.
 
+(*****************************************************************************************)
+(********************************* { Mutilated Board  } **********************************)
+(*****************************************************************************************)
+
 (** combinaison des deux lemmes importants que l'on vient de définir *)
-Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
+Lemma invariant_extended_to_dominolist :
+  forall p p' dl,
   pose_dominos dl p = p' ->
   card Blanc p = card Blanc p' + (List.length dl) /\
   card Noir p = card Noir p' + (List.length dl).
