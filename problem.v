@@ -110,7 +110,7 @@ Lemma domino_bicolor (d : domino) :
   (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
   (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
 Proof.
-  split; destruct d; unfold case_prise; simpl; intro. 
+  split; destruct d; unfold case_prise; simpl; intro.
   - eapply (dessous_inv_col Blanc).
     unfold couleur_case.
     unfold case_blanche in H.
@@ -578,7 +578,7 @@ Proof.
       rewrite e.
       simpl.
       case (eq_coord a0 a0).
-      - intro. 
+      - intro.
         case (eq_coord b a0).
         + intro. rewrite e1. reflexivity.
         + intro. rewrite <- e, IHp.
@@ -699,7 +699,7 @@ Proof.
   intro.
   apply List.in_in_remove.
   - intro.
-    eapply case_diff_droite with c. 
+    eapply case_diff_droite with c.
     assumption.
   - assumption.
 Qed.
@@ -711,7 +711,7 @@ Proof.
   intro.
   apply List.in_in_remove.
   - intro.
-    eapply case_diff_dessous with c. 
+    eapply case_diff_dessous with c.
     assumption.
   - assumption.
 Qed.
@@ -723,7 +723,7 @@ Proof.
   intro.
   apply List.in_in_remove.
   - intro.
-    eapply case_diff_droite with c. 
+    eapply case_diff_droite with c.
     symmetry.
     assumption.
   - assumption.
@@ -736,7 +736,7 @@ Proof.
   intro.
   apply List.in_in_remove.
   - intro.
-    eapply case_diff_dessous with c. 
+    eapply case_diff_dessous with c.
     symmetry.
     assumption.
   - assumption.
@@ -881,6 +881,14 @@ Proof.
   auto.
 Qed.
 
+Lemma rm_add_b: forall p col dl, card col p = card col (pose_dominos dl p) + length dl.
+Proof.
+  induction dl.
+  { simpl. trivial. }
+  { admit.
+    }
+Admitted.
+
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
   pose_dominos dl p = p' ->
@@ -888,20 +896,17 @@ Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list d
   card Noir p = card Noir p' + (List.length dl).
 Proof.
   intros p p' dl.
-  destruct dl; intro H.
-  { rewrite <- H. simpl. lia. }
+  destruct dl; intro H; symmetry in H.
+  { rewrite H. simpl. lia. }
   {
-    destruct d;
-    (* simpl in *; *)
+    destruct d as [c|c];
     split;
     case (bl_or_no c);
-    intro col.
-    - 
-    (* rewrite rw_util3 in H; *)
-    (* rewrite <- H. *)
-    (* unfold pose_dominos. *)
-
-Admitted.
+    intro col;
+    rewrite H;
+    apply rm_add_b.
+  }
+Qed.
 
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
