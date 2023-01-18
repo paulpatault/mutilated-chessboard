@@ -42,11 +42,9 @@ Definition case_prise (d:domino) : coord * coord :=
 
 (** une case est blanche si la somme de ses coordonnées est paire *)
 Definition case_blanche (c : coord) : Prop := Nat.Even (c.(x) + c.(y)).
-Definition est_blanche  (c : coord) : bool := even     (c.(x) + c.(y)).
 
 (** une case est noire si la somme de ses coordonnées est paire *)
 Definition case_noire (c : coord) : Prop := Nat.Odd (c.(x) + c.(y)).
-Definition est_noire  (c : coord) : bool := odd     (c.(x) + c.(y)).
 
 (** condiction pour que la case [c] soit de couleur [cc] *)
 Definition couleur_case (cc : couleur) (c : coord) : Prop :=
@@ -174,20 +172,6 @@ Proof.
     apply (Nat.Even_Odd_False (x c + y c)); assumption.
 Qed.
 
-(** si [c] est une case blanche alors [c] n'est pas une case noire *)
-Lemma bl_no_false : forall c: coord, case_blanche c -> ~ (case_noire c).
-Proof.
-  intros c H1 H2.
-  apply (Nat.Even_Odd_False (x c + y c)); assumption.
-Qed.
-
-(** si [n] est pair, alors [n] n'est pas impair (dans Prop) *)
-Lemma even_xor_odd (n : nat) : Nat.Even n -> ~ (Nat.Odd n).
-Proof.
-  intros H H1.
-  apply Nat.Even_Odd_False with n; assumption.
-Qed.
-
 (** si [n] est pair, alors [n] n'est pas impair (dans Bool) *)
 Lemma even_to_not_odd (n:nat) : Nat.even n = true -> Nat.odd n = false.
 Proof.
@@ -231,6 +215,7 @@ Ltac casse_if col h :=
     trivial
   end.
 
+(* TODO *)
 (** la taille du plateau est égale
  *  à la somme du nombre de ses cases blanches
  *  et du nombre de ses cases noires *)
@@ -853,7 +838,6 @@ Definition resoluble (p : plateau) :=
 (**************************** { Classical board } ****************************)
 
 (** fonctions de liste *)
-
 Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
   match len with
   | 0 => []
@@ -864,7 +848,6 @@ Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
 Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
   init_aux 0 n f.
 
-
 (** définition de la solution pour l'échiquier non mutilé *)
 Definition sol_base :=
   List.concat
@@ -874,7 +857,7 @@ Definition sol_base :=
 (* Eval compute in sol_base. *)
 
 (** la solution fonctionne bien *)
-Corollary classic_board_resoluble : resoluble plateau_base.
+Theorem classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
   exists sol_base.
@@ -900,10 +883,6 @@ Proof.
   auto.
 Qed.
 
-(* Goal forall d p, card_bl (pose_domino d p) + 1 = card_bl p. *)
-(* Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1. *)
-
-
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
   pose_dominos dl p = p' ->
@@ -925,7 +904,6 @@ Proof.
     (* unfold pose_dominos. *)
 
 Admitted.
-
 
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
