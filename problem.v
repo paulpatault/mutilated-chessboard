@@ -881,13 +881,29 @@ Proof.
   auto.
 Qed.
 
+Lemma rw_util4 : forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+Admitted.
+
+Lemma retire_domino : forall p d col, card col p = S (card col (pose_domino d p)).
+Admitted.
+
+Lemma min_b_both_sides : forall a b c, a = c + 1 -> a + b = c + S b. Proof. lia. Qed.
+
 Lemma rm_add_b: forall p col dl, card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
   { simpl. trivial. }
-  { admit.
-    }
-Admitted.
+  { simpl.
+    rewrite rw_util3.
+    rewrite rw_util4.
+    set (p' := (pose_dominos dl p)).
+    rewrite IHdl.
+    apply min_b_both_sides.
+    rewrite Nat.add_1_r.
+    rewrite (retire_domino p' a).
+    reflexivity.
+  }
+Qed.
 
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
