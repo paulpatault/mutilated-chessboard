@@ -850,7 +850,41 @@ Definition solution (p : plateau) (dl : list domino) :=
 Definition resoluble (p : plateau) :=
   exists dl : list domino, solution p dl.
 
-(****************************** { Main Lemma  } ******************************)
+(**************************** { Classical board } ****************************)
+
+(** fonctions de liste *)
+
+Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
+  match len with
+  | 0 => []
+  | S len =>
+      (f i) :: init_aux (i+1) len f
+  end.
+
+Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
+  init_aux 0 n f.
+
+
+(** définition de la solution pour l'échiquier non mutilé *)
+Definition sol_base :=
+  List.concat
+  (init 8 (fun j =>
+  init 4 (fun i => mk_domino_H j (i*2)))).
+
+(* Eval compute in sol_base. *)
+
+(** la solution fonctionne bien *)
+Corollary classic_board_resoluble : resoluble plateau_base.
+Proof.
+  unfold resoluble.
+  exists sol_base.
+  simpl.
+  unfold pose_domino.
+  simpl.
+  reflexivity.
+Qed.
+
+(**************************** { Mutilated Board  } ***************************)
 
 Lemma pose_domino_dont_change_card : forall d p,
   card_no (pose_domino d p) = card_bl (pose_domino d p) ->
@@ -881,7 +915,7 @@ Proof.
   { rewrite <- H. simpl. lia. }
   {
     destruct d;
-    simpl in *;
+    (* simpl in *; *)
     split;
     case (bl_or_no c);
     intro col.
@@ -893,7 +927,7 @@ Proof.
 Admitted.
 
 
-Lemma resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
+Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
   intros p H.
   destruct H.
@@ -908,44 +942,10 @@ Proof.
     assumption. }
 Qed.
 
-Lemma mutilated_board : ~ resoluble plateau_coupe.
+Corollary mutilated_board : ~ resoluble plateau_coupe.
 Proof.
   intro.
   apply resoluble_invariant in H.
   rewrite card_coupe in H.
   lia.
-Qed.
-
-(**************************** { Classical board } ****************************)
-
-(** fonctions de liste *)
-
-Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
-  match len with
-  | 0 => []
-  | S len =>
-      (f i) :: init_aux (i+1) len f
-  end.
-
-Definition init {A : Type} (n : nat) (f : nat -> A) : list A :=
-  init_aux 0 n f.
-
-
-(** définition de la solution pour l'échiquier non mutilé *)
-Definition sol_base :=
-  List.concat
-  (init 8 (fun j =>
-  init 4 (fun i => mk_domino_H j (i*2)))).
-
-(* Eval compute in sol_base. *)
-
-(** la solution fonctionne bien *)
-Lemma classic_board_resoluble : resoluble plateau_base.
-Proof.
-  unfold resoluble.
-  exists sol_base.
-  simpl.
-  unfold pose_domino.
-  simpl.
-  reflexivity.
 Qed.

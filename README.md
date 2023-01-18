@@ -37,17 +37,46 @@ L'échiquer est représenté par un ensemble de cases :
     card Blanc p = card Blanc p' + 1 /\
     card Noir p  = card Noir  p' + 1.
   ```
-- todo suite
+- généralisation du lemme précédent aux liste de dominos
+  ```coq
+  Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
+    pose_dominos dl p = p' ->
+    card Blanc p = card Blanc p' + (List.length dl) /\
+    card Noir p = card Noir p' + (List.length dl).
+  ```
 
+### Definitions
+
+
+- `plateau_base` : échiquier 8x8 classique
+- `plateau_coupé` : `plateau_base` duquel on a retiré les cases {0;0} et {7;7} (une paire de coins opposés)
+
+- `solution p dl` : `dl` est une solution de `p` si en posant chaque domino de `dl` on arrive a un plateau vide
+  ```coq
+  Definition solution (p : plateau) (dl : list domino) :=
+    pose_dominos dl p = [].
+  ```
+
+- `resoluble p` : `p` est résoluble s'il existe une solution
+  ```coq
+  Definition resoluble (p : plateau) :=
+    exists dl : list domino, solution p dl.
+  ```
+
+### Résultat principal
+
+- théorème : si on peut résourde `p` alors `p` contient autant de cases noires de que cases blanches
+  ```coq
+  Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
+  ```
+
+- corrolaire du théorème : le problème initial !
+  on a bien montré qu'on ne peut pas paver avec des dominos 2x1 un plateau d'échec duquel on aurait retiré deux coins opposés
+  ```coq
+  Corollary mutilated_board : ~ resoluble plateau_coupé.
+  ```
 
 ### Ensemble des hypothèses
 
 - hypothèses relative a l'ensemble représenté par une liste
-- on fait aussi l'hypothèse que lorsque l'on pose un domino, celui peut être posé : il ne va pas dans le vide
-
-
-### TODO
-
-- [x] lemme `in_simp`
-- [x] lemme `invariant_noir`
-- [ ] finir formalisation du problème général (après invariant : établir la contradiction)
+- on fait aussi l'hypothèse que lorsque l'on pose un domino, celui-ci peut être posé : il ne va pas dans le vide
