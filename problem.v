@@ -909,8 +909,20 @@ Qed.
 
 (* idée : montrer que l'ordre ne compte pas *)
 (* TODO *)
+Lemma rw_util4_for4 : forall p dl d, pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
+Proof.
+Admitted.
+
+
 Lemma rw_util4 :
   forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+Proof.
+  intros p dl d.
+  pose (H := rw_util4_for4 p dl d).
+  rewrite H.
+  (* unfold pose_dominos.
+  simpl.
+  induction dl. auto. *)
 Admitted.
 
 
