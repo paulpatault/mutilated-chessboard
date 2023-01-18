@@ -215,7 +215,6 @@ Ltac casse_if col h :=
     trivial
   end.
 
-(* TODO *)
 (** la taille du plateau est égale
     à la somme du nombre de ses cases blanches
     et du nombre de ses cases noires *)
@@ -272,11 +271,13 @@ Definition plateau_base : plateau := mk_plateau 8.
 
 Eval compute in mk_plateau 8.
 
+(** égalité entre coordonnées décidable *)
 Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
 Proof.
   decide equality; decide equality.
 Defined.
 
+(** notation à la \setminus *)
 Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
 
 (** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
@@ -402,6 +403,8 @@ Proof.
     trivial.
 Qed.
 
+(** si [a] est une case de couleur [col],
+    alors [a] ne pèse pas dans le compte des cases de couleurs [neg col]*)
 Lemma cons_card_neq col a p : couleur_case col a -> card (neg_couleur col) (a :: p) = card (neg_couleur col) p.
 Proof.
   intro.
@@ -426,7 +429,7 @@ Proof.
   reflexivity.
 Qed.
 
-
+(** ajouter la même case à deux plateau ne change rien à l'égalité entre les comptes de couleurs *)
 Lemma card_eq_hdS col a p p' : card col p + 1 = card col p' -> card col (a :: p) + 1 = card col (a :: p').
 Proof.
   intro.
@@ -449,6 +452,7 @@ Proof.
       congruence.
 Qed.
 
+(** si on retire une case de la couleur que l'on compte, alors on en a une de moins *)
 Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
   couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
 Proof.
@@ -516,6 +520,8 @@ Proof.
   }
 Qed.
 
+(** si on retire une case de la couleur que l'on ne compte pas
+    alors le compte n'a pas changé *)
 Lemma retire_case_neg1 (a : coord) (p : plateau) :
   case_noire a -> card_bl (p \ a) = card_bl p.
 Proof.
@@ -541,6 +547,8 @@ Proof.
   }
 Qed.
 
+(** si on retire une case de la couleur que l'on ne compte pas
+    alors le compte n'a pas changé *)
 Lemma retire_case_neg2 (a : coord) (p : plateau) :
   case_blanche a -> card_no (p \ a) = card_no p.
 Proof.
@@ -881,11 +889,12 @@ Proof.
   auto.
 Qed.
 
+(* idée : montrer que l'ordre ne compte pas *)
+(* TODO *)
 Lemma rw_util4 : forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
-Proof.
-  (* idée : montrer que l'ordre ne compte pas *)
 Admitted.
 
+(* TODO *)
 Lemma retire_domino : forall p d col, card col p = S (card col (pose_domino d p)).
 Admitted.
 
@@ -928,6 +937,8 @@ Proof.
   }
 Qed.
 
+(** si on peut résourde [p],
+    alors [p] contient autant de cases noires de que cases blanches *)
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
   intros p H.
@@ -943,6 +954,7 @@ Proof.
     assumption. }
 Qed.
 
+(** ce qu'on voulait prouver ! *)
 Corollary mutilated_board : ~ resoluble plateau_coupe.
 Proof.
   intro.
