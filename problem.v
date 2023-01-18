@@ -907,8 +907,7 @@ Proof.
   auto.
 Qed.
 
-(* idée : montrer que l'ordre ne compte pas *)
-(* TODO *)
+(** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
   forall p d1 d2, pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
 Proof.
@@ -916,6 +915,7 @@ Proof.
   { auto. }
 Admitted.
 
+(** déduction de la commutativité de [pose_domino] *)
 Lemma rw_util4_for4 : forall p dl d, pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
 Proof.
   intros p dl d.
@@ -931,7 +931,8 @@ Proof.
   }
 Qed.
 
-
+(** poser un domino [d] puis la liste [dl]
+   est équivalent à poser [dl] puis [d]    *)
 Lemma rw_util4 :
   forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Proof.
