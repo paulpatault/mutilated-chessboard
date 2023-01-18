@@ -634,7 +634,7 @@ Qed.
 Hint Resolve retire_case_neg2.
 
 (** l'opération [remove] est commutative *)
-Lemma remove_assoc (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
+Lemma remove_comm (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
 Proof.
   case (eq_coord a b).
   { intro. rewrite e. reflexivity. }
@@ -704,7 +704,7 @@ Proof.
     apply H1 in H2_cpy.
     unfold pose_domino.
     simpl.
-    rewrite remove_assoc.
+    rewrite remove_comm.
     rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)); trivial.
     symmetry.
     apply (retire_case Blanc (dessous c) p); simpl; trivial.
@@ -717,7 +717,7 @@ Proof.
     apply H1 in H2_cpy.
     unfold pose_domino.
     simpl.
-    rewrite remove_assoc.
+    rewrite remove_comm.
     rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)); trivial.
     symmetry.
     apply (retire_case Blanc (droite c) p); simpl; trivial.
@@ -846,7 +846,7 @@ Proof.
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (dessous c) p).
-    rewrite remove_assoc.
+    rewrite remove_comm.
     apply (retire_case Noir c (remove eq_coord (dessous c) p)); simpl; trivial.
     - apply in_simp2.
       apply (rm_iff_mem p p' (Hauteur c)).
@@ -859,7 +859,7 @@ Proof.
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (droite c) p).
-    rewrite remove_assoc.
+    rewrite remove_comm.
     apply (retire_case Noir c (remove eq_coord (droite c) p)); simpl; trivial.
     - apply in_simp2_droite.
       apply (rm_iff_mem p p' (Largeur c)).
@@ -909,22 +909,42 @@ Qed.
 
 (* idée : montrer que l'ordre ne compte pas *)
 (* TODO *)
+Lemma pose_domino_comm :
+  forall p d1 d2, pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
+Proof.
+  induction p.
+  { auto. }
+Admitted.
+
 Lemma rw_util4_for4 : forall p dl d, pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
 Proof.
-Admitted.
+  intros p dl d.
+  revert p.
+  induction dl.
+  { auto. }
+  {
+    intro p.
+    simpl.
+    rewrite pose_domino_comm.
+    set (pa := pose_domino a p).
+    apply IHdl.
+  }
+Qed.
 
 
 Lemma rw_util4 :
   forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Proof.
   intros p dl d.
-  pose (H := rw_util4_for4 p dl d).
-  rewrite H.
-  (* unfold pose_dominos.
-  simpl.
-  induction dl. auto. *)
-Admitted.
-
+  rewrite (rw_util4_for4 p dl d).
+  revert p.
+  induction dl.
+  { auto. }
+  { simpl.
+    intro p.
+    apply IHdl.
+  }
+Qed.
 
 (** [Lemma retire_domino] : poser un domino sur un plateau
                             retire une case de chaque couleur
