@@ -314,6 +314,7 @@ Definition pose_domino (d : domino) (p : plateau) : plateau :=
 Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
   fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
 
+(** hyp : lorsque l'on écrit [pose_domino d p] on suppose toujours que [p] contient [case_prises d] *)
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
 
@@ -531,17 +532,6 @@ Proof.
           -- assumption.
   }
 Qed.
-
-Lemma retire_case_bl (a : coord) (p: plateau) :
-  case_blanche a -> List.In a p -> card_bl (p \ a) = card_bl p - 1.
-Proof.
-  (* cas particulier du lemme au dessus *)
-Admitted.
-Lemma retire_case_no (a : coord) (p: plateau) :
-  case_blanche a -> List.In a p -> card_no (p \ a) = card_no p - 1.
-Proof.
-  (* cas particulier du lemme au dessus *)
-Admitted.
 
 Lemma retire_case_neg1 (a : coord) (p : plateau) :
   case_noire a -> card_bl (p \ a) = card_bl p.
@@ -834,35 +824,7 @@ Proof.
   - apply (invariant_noir p p' d);  assumption.
 Qed.
 
-
 Lemma rw_util3 : forall d a p, pose_dominos d (pose_domino a p) = pose_dominos (a::d) p.
-Proof.
-  simpl.
-  reflexivity.
-Qed.
-
-(** combinaison des deux lemmes importants que l'on vient de définir *)
-Lemma invariant_pluriel : forall p p': plateau, forall dl: list domino,
-  pose_dominos dl p = p' ->
-  card Blanc p = card Blanc p' + (List.length dl) /\
-  card Noir p = card Noir p' + (List.length dl).
-Proof.
-  intros p p' d H.
-  destruct d.
-  { rewrite <- H. simpl. lia. }
-    { simpl in *.
-      rewrite rw_util3 in H.
-      rewrite <- H.
-      simpl.
-Admitted.
-(* TODO *)
-(* TODO *)
-(* TODO *)
-(* TODO *)
-(* TODO *)
-
-(** le plateau initial non mutilé contient autant de cases noires que de cases blanches *)
-Lemma card_base : card Noir plateau_base = card Blanc plateau_base.
 Proof.
   simpl.
   reflexivity.
@@ -875,10 +837,7 @@ Proof.
   reflexivity.
 Qed.
 
-(* Inductive resoluble (p : plateau) : Prop := *)
-(* | axiome : List.length p = 0 -> resoluble p *)
-(* | next : forall d, resoluble (pose_domino d p) -> resoluble p. *)
-
+(*********************** { Critère de résolubilité  } ************************)
 
 (** une liste de dominos « résout » un plateau si une fois que l'on les a tous posé,
     la liste représentant le plateau est vide *)
@@ -891,88 +850,45 @@ Definition solution (p : plateau) (dl : list domino) :=
 Definition resoluble (p : plateau) :=
   exists dl : list domino, solution p dl.
 
-(** le plateau_coupe n'est pas vide *)
-Lemma ll : List.length plateau_coupe <> 0.
-Proof.
-  intro.
-  simpl in H.
-  discriminate.
-Qed.
-
-(** la liste des dominos a exactement la longueur de la moitié de la liste représentant le plateau *)
-Lemma size_dom (x0 : list domino) :
-  forall dl : list domino,
-  forall p : plateau,
-  pose_dominos dl p = [] -> List.length dl * 2 = List.length p.
-Proof.
-  intros.
-Admitted.
-
-(****************************** { Arith Utils } ******************************)
-Lemma arith : forall n, n = n * 2 / 2.
-Proof.
-  intro.
-  rewrite Nat.div_mul; auto.
-Qed.
-
-Lemma a : forall x n, x >= 0 -> n >= 0 -> x * 2 = n -> x = n / 2.
-Proof.
-  intros.
-  rewrite arith in H1.
-  simpl in H1.
-Admitted.
-
-
 (****************************** { Main Lemma  } ******************************)
 
-Lemma auxaux : forall n m, Nat.Even (n + m) -> Nat.Odd (n + (m + 1)).
-Proof.
-  destruct n.
-  + simpl.
-    admit.
-  + simpl.
-    intros.
-    admit.
-Admitted.
-
-
-Lemma rw_util4 : forall d p,
+Lemma pose_domino_dont_change_card : forall d p,
   card_no (pose_domino d p) = card_bl (pose_domino d p) ->
   card_no p = card_bl p.
 Proof.
-  (* case (bl_or_no a0). *)
   intros d p.
-  case d; intros c H.
-  { unfold pose_domino in H.
-    simpl in H.
-    case (bl_or_no c); intro col.
-    - rewrite retire_case_neg1 in H.
-      rewrite remove_assoc in H.
-      rewrite retire_case_neg2 in H.
-      + 
-        rewrite (retire_case_bl c p) in H.
-        * rewrite (retire_case_no c p) in H.
-        unfold couleur_case in col.
+  set (p' := pose_domino d p).
+  assert (p' = pose_domino d p). auto.
+  set (H1 := invariant p p' d H).
+  destruct H1.
+  simpl in H0, H1.
+  rewrite H0, H1.
+  auto.
+Qed.
+
+(* Goal forall d p, card_bl (pose_domino d p) + 1 = card_bl p. *)
+(* Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1. *)
 
 
-        (*
-Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
-couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p. *)
-        (* unfold dessous. *)
-        (* unfold case_noire. *)
-        simpl.
-        apply Nat.odd_spec.
-        apply Nat.even_spec in col.
-      + unfold couleur_case in col. unfold case_blanche. assumption.
-      + unfold couleur_case in col. unfold case_noire. unfold dessous.
-        simpl.
-        apply auxaux.
-        assumption.
-    -
-
-      (* Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
-  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p. *)
-
+(** combinaison des deux lemmes importants que l'on vient de définir *)
+Lemma invariant_extended_to_dominolist : forall p p': plateau, forall dl: list domino,
+  pose_dominos dl p = p' ->
+  card Blanc p = card Blanc p' + (List.length dl) /\
+  card Noir p = card Noir p' + (List.length dl).
+Proof.
+  intros p p' dl.
+  destruct dl; intro H.
+  { rewrite <- H. simpl. lia. }
+  {
+    destruct d;
+    simpl in *;
+    split;
+    case (bl_or_no c);
+    intro col.
+    - 
+    (* rewrite rw_util3 in H; *)
+    (* rewrite <- H. *)
+    (* unfold pose_dominos. *)
 
 Admitted.
 
@@ -984,11 +900,11 @@ Proof.
   unfold solution in H.
   induction x0; simpl in *.
   { rewrite H. simpl. reflexivity. }
-  { apply invariant_pluriel in H.
+  { apply invariant_extended_to_dominolist  in H.
     simpl in H.
     destruct H.
     rewrite <- H in H0.
-    eapply rw_util4 with a0.
+    apply (pose_domino_dont_change_card a).
     assumption. }
 Qed.
 
@@ -999,20 +915,6 @@ Proof.
   rewrite card_coupe in H.
   lia.
 Qed.
-
-(* Lemma mutilated_board : ~ resoluble plateau_coupe.
-Proof.
-  intro.
-  destruct H.
-  assert (H1 : fold_left (fun (p : plateau) (d : domino) => pose_domino d p) x0 plateau_coupe = []); trivial.
-  apply (size_dom x0) in H1.
-  simpl in H1.
-  assert (length x0 = 31). lia.
-  apply a in H1; try lia.
-  (* { unfold fold_left in H.
-    discriminate. } *)
-Admitted. *)
-
 
 (**************************** { Classical board } ****************************)
 
