@@ -62,6 +62,11 @@ L'échiquer est représenté par un ensemble de cases :
   Definition resoluble (p : plateau) :=
     exists dl : list domino, solution p dl.
   ```
+- Notations
+  * `l \ e` : on retire `e` de la liste `l`
+  * `d1 # d2` : les dominos `d1` et `d2` couvrent des cases différentes (ils sont « disjoints »)
+  * `d ## dl` : signifie `∀ di ∈ dl, d # di`
+
 
 ### Résultat principal
 
@@ -80,3 +85,10 @@ L'échiquer est représenté par un ensemble de cases :
 
 - hypothèses relative a l'ensemble représenté par une liste
 - on fait aussi l'hypothèse que lorsque l'on pose un domino, celui-ci peut être posé : il ne va pas dans le vide -->
+
+### TODO
+
+- expliquer les notations
+- finir la preuve : il reste encore 3 `admit`
+- ajouter une notation `pose_domino d p = "d / p"` : `d` écrase `p` ?
+
