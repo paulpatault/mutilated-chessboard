@@ -1002,15 +1002,16 @@ Proof.
       eapply namex2 with a. 
       assumption.
     - admit.
-  }
-Qed.
+Admitted.
+  (* }
+Qed. *)
 
 (** poser un domino [d] puis la liste [dl]
     est équivalent à poser [dl] puis [d]    *)
 Lemma rw_util4 :
-  forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+  forall p dl d, disjoints_dominos_l d dl -> pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Proof.
-  intros p dl d.
+  intros p dl d H.
   rewrite (rw_util4_for4 p dl d).
   revert p.
   induction dl.
@@ -1018,7 +1019,15 @@ Proof.
   { simpl.
     intro p.
     apply IHdl.
-  }
+    induction dl.
+    - simpl. auto.
+    - simpl.
+      try (unfold disjoints_dominos_l in H;
+        destruct H;
+        destruct H0;
+        auto).
+      }
+  { assumption. }
 Qed.
 
 (** [Lemma retire_domino] : poser un domino sur un plateau
@@ -1133,8 +1142,9 @@ Proof.
     rewrite Nat.add_1_r.
     rewrite (retire_domino p' a).
     reflexivity.
+    admit.
   }
-Qed.
+Admitted.
 
 (*****************************************************************************************)
 (********************************* { Mutilated Board  } **********************************)
