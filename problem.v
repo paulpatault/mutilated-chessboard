@@ -121,13 +121,32 @@ Eval compute in mk_plateau 8.
 Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
 Proof.
   decide equality; decide equality.
+  (* destruct a,b.
+  compare x0 x1;
+  compare y0 y1;
+  intros ey ex.
+  - left.
+    rewrite ex, ey.
+    trivial.
+  - right.
+    rewrite ex.
+    intro.
+    elim ey. *) (* je ne sais pas avancer ici *)
 Defined.
 
 (** l'égalité entre dominos est décidable *)
 Lemma eq_domino : forall a b : domino, {a = b} + {a <> b}.
 Proof.
-  decide equality; decide equality;
-  decide equality; decide equality.
+  intros.
+  destruct a, b.
+  - case (eq_coord c c0); intro e.
+    + rewrite e. left. trivial.
+    + decide equality; apply eq_coord.
+  - right. intro. discriminate.
+  - right. intro. discriminate.
+  - case (eq_coord c c0); intro e.
+    + rewrite e. left. trivial.
+    + decide equality; apply eq_coord.
 Defined.
 
 (** notation à la \setminus *)
@@ -157,6 +176,26 @@ Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
 
 Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
 
+Definition disjoints_dominos (d1 d2:domino) :=
+  fst (case_prise d1) <> fst (case_prise d2) /\
+  fst (case_prise d1) <> snd (case_prise d2) /\
+  snd (case_prise d1) <> fst (case_prise d2) /\
+  snd (case_prise d1) <> snd (case_prise d2).
+
+Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
+
+(** déduction de la commutativité de [pose_domino] *)
+Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
+  match dl with
+  | [] => True
+  | h :: t => disjoints_dominos d h /\ disjoints_dominos_l d t
+  end.
+
+Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativity).
+
+Definition disjoints_dominos_lo (dl : list domino) :=
+  forall d, In d dl -> d ## (List.remove eq_domino d dl).
+
 (*****************************************************************************************)
 (***************************** { Critère de résolubilité  } ******************************)
 (*****************************************************************************************)
@@ -171,6 +210,7 @@ Definition solution (p : plateau) (dl : list domino) :=
     telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
   exists dl : list domino, solution p dl.
+  (* /\ disjoints_dominos_lo dl. *)
 
 
 (*****************************************************************************************)
@@ -201,10 +241,17 @@ Theorem classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
   exists sol_base.
+  (* split. *)
+  (* - *)
   simpl.
   unfold pose_domino.
   simpl.
   reflexivity.
+
+  (* - unfold disjoints_dominos_lo.
+    intros.
+    set (s := remove eq_domino d sol_base).
+    unfold disjoints_dominos_l. *)
 Qed.
 
 (*****************************************************************************************)
@@ -914,16 +961,6 @@ Proof.
   auto.
 Qed.
 
-Definition disjoints_dominos (d1 d2:domino) :=
-  let '(a1, b1) := case_prise d1 in
-  let '(a2, b2) := case_prise d2 in
-  a1 <> a2 /\
-  b1 <> b2 /\
-  a1 <> b2 /\
-  b1 <> a2.
-
-Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
-
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
   forall p d1 d2, d1 # d2 -> pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
@@ -955,16 +992,7 @@ Proof.
     } *)
 Admitted.
 
-(** déduction de la commutativité de [pose_domino] *)
-Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
-  match dl with
-  | [] => True
-  | h :: t => disjoints_dominos d h /\ disjoints_dominos_l d t
-  end.
-
-Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativity).
-
-Lemma namex : forall d a a0 dl, d ## (a :: a0 :: dl) ->
+Lemma disj_lemma1 : forall d a a0 dl, d ## (a :: a0 :: dl) ->
    d # a /\ d ## dl.
 Proof.
   induction dl; intros; simpl; split; 
@@ -973,7 +1001,8 @@ Proof.
     destruct H; destruct H0; auto).
 Qed.
 
-Lemma namex2 :
+
+Lemma disj_lemma2  :
   forall d a a0 dl,
     d ## (a :: a0 :: dl) ->
     d ## (a0 :: a0 :: dl).
@@ -985,6 +1014,12 @@ Proof.
     auto).
 Qed.
 
+Lemma disj_lemma3 : forall d1 d2, d1 # d2 -> d2 # d1.
+Proof.
+  intros.
+  unfold disjoints_dominos in *.
+  intuition.
+Qed.
 
 Lemma rw_util4_for4 : forall p dl d,
   d ## dl ->
@@ -1001,13 +1036,20 @@ Proof.
     set (pa := pose_domino a p).
     apply IHdl.
     - induction dl; simpl; auto.
-      eapply namex with a0.
-      eapply namex2 with a. 
+      eapply disj_lemma1 with a0.
+      eapply disj_lemma2 with a.
       assumption.
-    - admit.
-Admitted.
-  (* }
-Qed. *)
+    - induction dl.
+      + unfold disjoints_dominos_l in H.
+        destruct H.
+        apply disj_lemma3.
+        assumption.
+      + apply disj_lemma1 in H.
+        destruct H.
+        apply disj_lemma3.
+        assumption.
+  }
+Qed.
 
 (** poser un domino [d] puis la liste [dl]
     est équivalent à poser [dl] puis [d]    *)
@@ -1110,7 +1152,6 @@ Proof.
   }
   {
     pose (H := droite_inv_col Blanc c).
-    (* destruct H as (H & HH). clear HH. *)
     pose (col_d_c := H col_c).
     assert (couleur_case Noir (droite c)); auto.
     clear col_d_c.
@@ -1130,13 +1171,30 @@ Proof.
 Qed.
 
 
+Lemma simp_disjlo1 : forall d dl,  disjoints_dominos_lo (d :: dl) -> disjoints_dominos_lo dl.
+Admitted.
+
+Lemma simp_disjlo2 : forall d dl, disjoints_dominos_lo (d :: dl) -> disjoints_dominos_l d dl.
+Admitted.
+
+    (* - unfold disjoints_dominos_lo in disj.
+      simpl in *.
+      set (H := disj a). *)
+
+    (* - induction dl.
+      + unfold disjoints_dominos_lo.
+        simpl in *.
+        auto.
+      +  *)
+
 (** retirer [N] dominos = retirer [N] cases [blanches|noires] *)
 Lemma rm_add_b :
-  forall p col dl, card col p = card col (pose_dominos dl p) + length dl.
+  forall p col dl, (disjoints_dominos_lo dl) -> card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
   { simpl. trivial. }
-  { simpl.
+  { intro disj.
+    simpl.
     rewrite rw_util3.
     rewrite rw_util4.
     set (p' := (pose_dominos dl p)).
@@ -1145,8 +1203,13 @@ Proof.
     rewrite Nat.add_1_r.
     rewrite (retire_domino p' a).
     reflexivity.
-    admit.
+    - apply (simp_disjlo1 a). assumption.
+    - apply (simp_disjlo2 a). assumption.
   }
+Qed.
+
+Lemma sol_disj : forall p dl,
+  solution p dl -> disjoints_dominos_lo dl.
 Admitted.
 
 (*****************************************************************************************)
@@ -1156,11 +1219,12 @@ Admitted.
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant_extended_to_dominolist :
   forall p p' dl,
+  disjoints_dominos_lo dl ->
   pose_dominos dl p = p' ->
   card Blanc p = card Blanc p' + (List.length dl) /\
   card Noir p = card Noir p' + (List.length dl).
 Proof.
-  intros p p' dl.
+  intros p p' dl disj.
   destruct dl; intro H; symmetry in H.
   { rewrite H. simpl. lia. }
   {
@@ -1169,7 +1233,11 @@ Proof.
     case (bl_or_no c);
     intro col;
     rewrite H;
-    apply rm_add_b.
+    try (apply (rm_add_b p Blanc (Hauteur c :: dl)));
+    try (apply (rm_add_b p Noir  (Hauteur c :: dl)));
+    try (apply (rm_add_b p Blanc (Largeur c :: dl)));
+    try (apply (rm_add_b p Noir  (Largeur c :: dl)));
+    assumption.
   }
 Qed.
 
@@ -1178,6 +1246,7 @@ Qed.
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
   intros p H.
+  assert (H' := H).
   destruct H.
   unfold solution in H.
   induction x0; simpl in *.
@@ -1187,8 +1256,14 @@ Proof.
     destruct H.
     rewrite <- H in H0.
     apply (pose_domino_dont_change_card a).
-    assumption. }
-Qed.
+    assumption.
+    unfold resoluble in H'.
+
+    admit.
+    (* eapply (sol_disj p) in H'. *)
+  }
+Admitted.
+(* Qed. *)
 
 (** ce qu'on voulait prouver ! *)
 Corollary mutilated_board : ~ resoluble plateau_coupe.
