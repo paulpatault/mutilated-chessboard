@@ -117,9 +117,16 @@ Definition plateau_base : plateau := mk_plateau 8.
 
 Eval compute in mk_plateau 8.
 
-(** égalité entre coordonnées décidable *)
+(** l'égalité entre coordonnées est décidable *)
 Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
 Proof.
+  decide equality; decide equality.
+Defined.
+
+(** l'égalité entre dominos est décidable *)
+Lemma eq_domino : forall a b : domino, {a = b} + {a <> b}.
+Proof.
+  decide equality; decide equality;
   decide equality; decide equality.
 Defined.
 
@@ -907,18 +914,80 @@ Proof.
   auto.
 Qed.
 
+Definition disjoints_dominos (d1 d2:domino) :=
+  let '(a1, b1) := case_prise d1 in
+  let '(a2, b2) := case_prise d2 in
+  a1 <> a2 /\
+  b1 <> b2 /\
+  a1 <> b2 /\
+  b1 <> a2.
+
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
-  forall p d1 d2, pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
+  forall p d1 d2, disjoints_dominos d1 d2 -> pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
 Proof.
-  induction p.
-  { auto. }
+  intros p d1 d2.
+  revert p.
+  case (eq_domino d1 d2).
+  - intro eqH. rewrite eqH. auto.
+  - intro neqH.
+    induction p; auto.
+
+    (* destruct d1, d2.
+    unfold pose_domino.
+    (* simpl. *)
+    (* pose (H := forall a, eq_coord a a). *)
+    case (eq_coord c0 a);
+    case (eq_coord c a);
+    simpl;
+    intros eq1 eq2.
+    + rewrite <- eq1 in eq2.
+      rewrite eq2.
+      reflexivity.
+    + rewrite eq2.
+      rewrite <- eq2.
+      case (eq_coord c c0); intro.
+      - rewrite eq2 in *. contradiction.
+      - simpl.
+
+    } *)
 Admitted.
 
 (** déduction de la commutativité de [pose_domino] *)
-Lemma rw_util4_for4 : forall p dl d, pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
+Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
+  match dl with
+  | [] => True
+  | h :: t => disjoints_dominos d h /\ disjoints_dominos_l d t
+  end.
+
+
+Lemma namex : forall d a a0 dl, disjoints_dominos_l d (a :: a0 :: dl) ->
+  disjoints_dominos d a /\ disjoints_dominos_l d dl.
 Proof.
-  intros p dl d.
+  induction dl; intros; simpl; split; 
+  try
+    (unfold disjoints_dominos_l in H;
+    destruct H; destruct H0; auto).
+Qed.
+
+Lemma namex2 :
+  forall d a a0 dl,
+    disjoints_dominos_l d (a :: a0 :: dl) ->
+    disjoints_dominos_l d (a0 :: a0 :: dl).
+Proof.
+  induction dl; intros; simpl; split;
+  try (unfold disjoints_dominos_l in H;
+    destruct H;
+    destruct H0;
+    auto).
+Qed.
+
+
+Lemma rw_util4_for4 : forall p dl d,
+  disjoints_dominos_l d dl ->
+  pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
+Proof.
+  intros p dl d H.
   revert p.
   induction dl.
   { auto. }
@@ -928,11 +997,16 @@ Proof.
     rewrite pose_domino_comm.
     set (pa := pose_domino a p).
     apply IHdl.
+    - induction dl; simpl; auto.
+      eapply namex with a0.
+      eapply namex2 with a. 
+      assumption.
+    - admit.
   }
 Qed.
 
 (** poser un domino [d] puis la liste [dl]
-   est équivalent à poser [dl] puis [d]    *)
+    est équivalent à poser [dl] puis [d]    *)
 Lemma rw_util4 :
   forall p dl d, pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Proof.
