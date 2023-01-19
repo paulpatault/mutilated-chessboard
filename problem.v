@@ -922,9 +922,11 @@ Definition disjoints_dominos (d1 d2:domino) :=
   a1 <> b2 /\
   b1 <> a2.
 
+Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
+
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
-  forall p d1 d2, disjoints_dominos d1 d2 -> pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
+  forall p d1 d2, d1 # d2 -> pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
 Proof.
   intros p d1 d2.
   revert p.
@@ -960,9 +962,10 @@ Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
   | h :: t => disjoints_dominos d h /\ disjoints_dominos_l d t
   end.
 
+Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativity).
 
-Lemma namex : forall d a a0 dl, disjoints_dominos_l d (a :: a0 :: dl) ->
-  disjoints_dominos d a /\ disjoints_dominos_l d dl.
+Lemma namex : forall d a a0 dl, d ## (a :: a0 :: dl) ->
+   d # a /\ d ## dl.
 Proof.
   induction dl; intros; simpl; split; 
   try
@@ -972,8 +975,8 @@ Qed.
 
 Lemma namex2 :
   forall d a a0 dl,
-    disjoints_dominos_l d (a :: a0 :: dl) ->
-    disjoints_dominos_l d (a0 :: a0 :: dl).
+    d ## (a :: a0 :: dl) ->
+    d ## (a0 :: a0 :: dl).
 Proof.
   induction dl; intros; simpl; split;
   try (unfold disjoints_dominos_l in H;
@@ -984,7 +987,7 @@ Qed.
 
 
 Lemma rw_util4_for4 : forall p dl d,
-  disjoints_dominos_l d dl ->
+  d ## dl ->
   pose_dominos (d::dl) p = (pose_dominos (dl++[d]) p).
 Proof.
   intros p dl d H.
@@ -1009,7 +1012,7 @@ Qed. *)
 (** poser un domino [d] puis la liste [dl]
     est équivalent à poser [dl] puis [d]    *)
 Lemma rw_util4 :
-  forall p dl d, disjoints_dominos_l d dl -> pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+  forall p dl d, d ## dl -> pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
 Proof.
   intros p dl d H.
   rewrite (rw_util4_for4 p dl d).
