@@ -1170,11 +1170,48 @@ Proof.
   }
 Qed.
 
+Lemma simp_disjlo0 : disjoints_dominos_lo [].
+Proof.
+  unfold disjoints_dominos_lo.
+  simpl.
+  auto.
+Qed.
 
-Lemma simp_disjlo1 : forall d dl,  disjoints_dominos_lo (d :: dl) -> disjoints_dominos_lo dl.
+Lemma simp_disjlo1 :
+  forall d dl,
+  disjoints_dominos_lo (d :: dl) ->
+  disjoints_dominos_lo dl.
+Proof.
+  intros d dl.
+  revert d.
+  induction dl.
+  - intros. apply simp_disjlo0.
+  - intros d H.
+    unfold disjoints_dominos_lo.
+    intros d0 Hin.
+    case (eq_domino d0 a); intro He.
+    + rewrite He. simpl.
+      case (eq_domino a a); intro Hea.
+      * admit.
+      * contradiction.
+    + admit.
 Admitted.
 
-Lemma simp_disjlo2 : forall d dl, disjoints_dominos_lo (d :: dl) -> disjoints_dominos_l d dl.
+Lemma simp_disjlo2 : 
+  forall d dl,
+  disjoints_dominos_lo (d :: dl) ->
+  disjoints_dominos_l d dl.
+Proof.
+  intros d dl. revert d. induction dl.
+  - intros.
+    unfold disjoints_dominos_l.
+    trivial.
+  - intros d H.
+    unfold disjoints_dominos_l.
+    split.
+    + admit.
+    + admit.
+      (* unfold disjoints_dominos. *)
 Admitted.
 
     (* - unfold disjoints_dominos_lo in disj.
@@ -1189,7 +1226,9 @@ Admitted.
 
 (** retirer [N] dominos = retirer [N] cases [blanches|noires] *)
 Lemma rm_add_b :
-  forall p col dl, (disjoints_dominos_lo dl) -> card col p = card col (pose_dominos dl p) + length dl.
+  forall p col dl,
+  (disjoints_dominos_lo dl) ->
+  card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
   { simpl. trivial. }
@@ -1210,6 +1249,7 @@ Qed.
 
 Lemma sol_disj : forall p dl,
   solution p dl -> disjoints_dominos_lo dl.
+
 Admitted.
 
 (*****************************************************************************************)
@@ -1246,10 +1286,10 @@ Qed.
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
   intros p H.
+  destruct H as (sol, H).
   assert (H' := H).
-  destruct H.
   unfold solution in H.
-  induction x0; simpl in *.
+  induction sol; simpl in *.
   { rewrite H. simpl. reflexivity. }
   { apply invariant_extended_to_dominolist  in H.
     simpl in H.
@@ -1257,13 +1297,11 @@ Proof.
     rewrite <- H in H0.
     apply (pose_domino_dont_change_card a).
     assumption.
-    unfold resoluble in H'.
-
-    admit.
-    (* eapply (sol_disj p) in H'. *)
+    eapply (sol_disj p) in H'.
+    apply simp_disjlo1 in H'.
+    assumption.
   }
-Admitted.
-(* Qed. *)
+Qed.
 
 (** ce qu'on voulait prouver ! *)
 Corollary mutilated_board : ~ resoluble plateau_coupe.
