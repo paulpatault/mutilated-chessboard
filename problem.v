@@ -121,17 +121,6 @@ Eval compute in mk_plateau 8.
 Lemma eq_coord : forall a b : coord, {a = b} + {a <> b}.
 Proof.
   decide equality; decide equality.
-  (* destruct a,b.
-  compare x0 x1;
-  compare y0 y1;
-  intros ey ex.
-  - left.
-    rewrite ex, ey.
-    trivial.
-  - right.
-    rewrite ex.
-    intro.
-    elim ey. *) (* je ne sais pas avancer ici *)
 Defined.
 
 (** l'égalité entre dominos est décidable *)
@@ -177,10 +166,19 @@ Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
 Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
 
 Definition disjoints_dominos (d1 d2:domino) :=
-  fst (case_prise d1) <> fst (case_prise d2) /\
-  fst (case_prise d1) <> snd (case_prise d2) /\
-  snd (case_prise d1) <> fst (case_prise d2) /\
-  snd (case_prise d1) <> snd (case_prise d2).
+  match d1, d2 with
+  | Hauteur c1, Hauteur c2
+  | Largeur c1, Largeur c2 =>
+      c1 <> c2 /\
+      dessous c1 <> c2 /\
+      dessous c2 <> c1
+  | Hauteur c1, Largeur c2
+  | Largeur c2, Hauteur c1 =>
+      c1 <> c2 /\
+      dessous c1 <> c2 /\
+      dessous c1 <> droite c2 /\
+      droite  c2 <> c1
+  end.
 
 Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
 
@@ -196,6 +194,131 @@ Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativ
 Definition disjoints_dominos_lo (dl : list domino) :=
   forall d, In d dl -> d ## (List.remove eq_domino d dl).
 
+
+(*****************************************************************************************)
+(****************************** { Lemmes sur "disjoints" } *******************************)
+(*****************************************************************************************)
+
+
+Lemma simp_disjlo0 : disjoints_dominos_lo [].
+Proof.
+  unfold disjoints_dominos_lo.
+  simpl.
+  auto.
+Qed.
+
+Hint Resolve simp_disjlo0.
+
+Lemma simp_disjlo0b : forall d, disjoints_dominos_l d [].
+Proof.
+  simpl.
+  auto.
+Qed.
+
+Hint Resolve simp_disjlo0b.
+
+Lemma rw_util_disj : forall a d, disjoints_dominos_l d [a] <-> disjoints_dominos d a.
+Proof.
+  split.
+  - intros H.
+    case d, a;
+    unfold disjoints_dominos_l, disjoints_dominos in *;
+    split;
+    try (destruct H;
+      destruct H;
+      assumption).
+  - intros H.
+    case d, a;
+    unfold disjoints_dominos_l, disjoints_dominos in *;
+    split; try assumption; trivial.
+Qed.
+
+Hint Resolve simp_disjlo0b.
+
+Goal
+  forall d1 d2 dl,
+  disjoints_dominos_lo (d1 :: d2 :: dl) ->
+  disjoints_dominos_lo (d2 :: d1 :: dl).
+Proof.
+  intros d1 d2 dl.
+  revert d1 d2.
+  induction dl.
+  (* - intros d1 d2 H. *)
+  - intro H.
+    unfold disjoints_dominos_lo in *.
+    intros d Hind.
+    simpl in *.
+    (* destruct Hind; *)
+    admit.
+Admitted.
+    (* + rewrite H0.
+      case (eq_domino d d);
+      case (eq_domino d d1);
+      intros Heqdd1 Heqdd; auto.
+      *
+        unfold disjoints_dominos_l.
+        split; auto.
+        unfold disjoints_dominos.
+        split.
+        intro.
+        elim Heqdd1.
+        unfold case_prise in H1.
+        simpl in H1.
+
+        Print f_equal.
+        injection H1. *)
+
+
+Lemma simp_disjlo1 :
+  forall d dl,
+  disjoints_dominos_lo (d :: dl) ->
+  disjoints_dominos_lo dl.
+Proof.
+  intros d dl.
+  revert d.
+  induction dl.
+  - intros. apply simp_disjlo0.
+  - intros d H.
+    unfold disjoints_dominos_lo.
+    intros d0 Hin.
+    case (eq_domino d0 a); intro He.
+    + rewrite He. simpl.
+      case (eq_domino a a); intro Hea.
+      * admit.
+      * contradiction.
+    + admit.
+Admitted.
+
+Hint Resolve simp_disjlo1.
+
+Lemma simp_disjlo2 :
+  forall d dl,
+  disjoints_dominos_lo (d :: dl) ->
+  disjoints_dominos_l d dl.
+Proof.
+  intros d dl. revert d. induction dl.
+  - intros.
+    unfold disjoints_dominos_l.
+    trivial.
+  - intros d H.
+    unfold disjoints_dominos_l.
+    split.
+    + admit.
+    + admit.
+Admitted.
+      (* unfold disjoints_dominos. *)
+
+    (* - unfold disjoints_dominos_lo in disj.
+      simpl in *.
+      set (H := disj a). *)
+
+    (* - induction dl.
+      + unfold disjoints_dominos_lo.
+        simpl in *.
+        auto.
+      +  *)
+Hint Resolve simp_disjlo2.
+
 (*****************************************************************************************)
 (***************************** { Critère de résolubilité  } ******************************)
 (*****************************************************************************************)
@@ -209,8 +332,7 @@ Definition solution (p : plateau) (dl : list domino) :=
     un plateau est résoluble s'il existe un liste de domino
     telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
-  exists dl : list domino, solution p dl.
-  (* /\ disjoints_dominos_lo dl. *)
+  exists dl : list domino, solution p dl /\ disjoints_dominos_lo dl.
 
 
 (*****************************************************************************************)
@@ -236,22 +358,22 @@ Definition sol_base :=
 
 (* Eval compute in sol_base. *)
 
+(** prouvable par un calcul,
+    mais de complexité trop grande pour être fait en pratique *)
+Hypothesis disj_base : disjoints_dominos_lo sol_base.
+
 (** la solution fonctionne bien *)
 Theorem classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
   exists sol_base.
-  (* split. *)
-  (* - *)
-  simpl.
-  unfold pose_domino.
-  simpl.
-  reflexivity.
-
-  (* - unfold disjoints_dominos_lo.
-    intros.
-    set (s := remove eq_domino d sol_base).
-    unfold disjoints_dominos_l. *)
+  split.
+  - unfold solution.
+    simpl.
+    unfold pose_domino.
+    simpl.
+    trivial.
+  - apply disj_base.
 Qed.
 
 (*****************************************************************************************)
@@ -971,34 +1093,24 @@ Proof.
   - intro eqH. rewrite eqH. auto.
   - intro neqH.
     induction p; auto.
-
-    (* destruct d1, d2.
-    unfold pose_domino.
-    (* simpl. *)
-    (* pose (H := forall a, eq_coord a a). *)
-    case (eq_coord c0 a);
-    case (eq_coord c a);
-    simpl;
-    intros eq1 eq2.
-    + rewrite <- eq1 in eq2.
-      rewrite eq2.
-      reflexivity.
+    destruct d1, d2;
+    case (eq_coord a c);
+    case (eq_coord a c0);
+    intros eq1 eq2 dijs; try congruence.
     + rewrite eq2.
-      rewrite <- eq2.
       case (eq_coord c c0); intro.
-      - rewrite eq2 in *. contradiction.
-      - simpl.
-
-    } *)
+      * rewrite eq2 in *. contradiction.
+      * simpl.
 Admitted.
 
 Lemma disj_lemma1 : forall d a a0 dl, d ## (a :: a0 :: dl) ->
    d # a /\ d ## dl.
 Proof.
-  induction dl; intros; simpl; split; 
-  try
-    (unfold disjoints_dominos_l in H;
-    destruct H; destruct H0; auto).
+  induction dl;
+  intros; simpl; split;
+  unfold disjoints_dominos_l in H; destruct H; auto.
+  destruct H0.
+  auto.
 Qed.
 
 
@@ -1007,17 +1119,19 @@ Lemma disj_lemma2  :
     d ## (a :: a0 :: dl) ->
     d ## (a0 :: a0 :: dl).
 Proof.
-  induction dl; intros; simpl; split;
-  try (unfold disjoints_dominos_l in H;
-    destruct H;
-    destruct H0;
-    auto).
+  induction dl;
+  intros; simpl; split;
+  unfold disjoints_dominos_l in H;
+  destruct H; auto;
+  destruct H0;
+  assumption.
 Qed.
 
 Lemma disj_lemma3 : forall d1 d2, d1 # d2 -> d2 # d1.
 Proof.
   intros.
-  unfold disjoints_dominos in *.
+  destruct d1, d2;
+  unfold disjoints_dominos in *;
   intuition.
 Qed.
 
@@ -1035,7 +1149,9 @@ Proof.
     rewrite pose_domino_comm.
     set (pa := pose_domino a p).
     apply IHdl.
-    - induction dl; simpl; auto.
+    -
+      (* induction dl; simpl; auto. *)
+      induction dl. simpl; auto.
       eapply disj_lemma1 with a0.
       eapply disj_lemma2 with a.
       assumption.
@@ -1170,60 +1286,6 @@ Proof.
   }
 Qed.
 
-Lemma simp_disjlo0 : disjoints_dominos_lo [].
-Proof.
-  unfold disjoints_dominos_lo.
-  simpl.
-  auto.
-Qed.
-
-Lemma simp_disjlo1 :
-  forall d dl,
-  disjoints_dominos_lo (d :: dl) ->
-  disjoints_dominos_lo dl.
-Proof.
-  intros d dl.
-  revert d.
-  induction dl.
-  - intros. apply simp_disjlo0.
-  - intros d H.
-    unfold disjoints_dominos_lo.
-    intros d0 Hin.
-    case (eq_domino d0 a); intro He.
-    + rewrite He. simpl.
-      case (eq_domino a a); intro Hea.
-      * admit.
-      * contradiction.
-    + admit.
-Admitted.
-
-Lemma simp_disjlo2 : 
-  forall d dl,
-  disjoints_dominos_lo (d :: dl) ->
-  disjoints_dominos_l d dl.
-Proof.
-  intros d dl. revert d. induction dl.
-  - intros.
-    unfold disjoints_dominos_l.
-    trivial.
-  - intros d H.
-    unfold disjoints_dominos_l.
-    split.
-    + admit.
-    + admit.
-      (* unfold disjoints_dominos. *)
-Admitted.
-
-    (* - unfold disjoints_dominos_lo in disj.
-      simpl in *.
-      set (H := disj a). *)
-
-    (* - induction dl.
-      + unfold disjoints_dominos_lo.
-        simpl in *.
-        auto.
-      +  *)
-
 (** retirer [N] dominos = retirer [N] cases [blanches|noires] *)
 Lemma rm_add_b :
   forall p col dl,
@@ -1246,11 +1308,6 @@ Proof.
     - apply (simp_disjlo2 a). assumption.
   }
 Qed.
-
-Lemma sol_disj : forall p dl,
-  solution p dl -> disjoints_dominos_lo dl.
-
-Admitted.
 
 (*****************************************************************************************)
 (********************************* { Mutilated Board  } **********************************)
@@ -1288,17 +1345,17 @@ Proof.
   intros p H.
   destruct H as (sol, H).
   assert (H' := H).
+  destruct H.
   unfold solution in H.
   induction sol; simpl in *.
   { rewrite H. simpl. reflexivity. }
   { apply invariant_extended_to_dominolist  in H.
     simpl in H.
     destruct H.
-    rewrite <- H in H0.
+    rewrite <- H in H1.
     apply (pose_domino_dont_change_card a).
     assumption.
-    eapply (sol_disj p) in H'.
-    apply simp_disjlo1 in H'.
+    apply simp_disjlo1 in H0.
     assumption.
   }
 Qed.
