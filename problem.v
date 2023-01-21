@@ -324,6 +324,13 @@ Proof.
   - intros d H.
     unfold disjoints_dominos_lo.
     unfold disjoints_dominos_lo_aux.
+    induction dl; auto.
+    right.
+    apply IHdl0.
+    + admit.
+      Admitted.
+    (* +
+
 
     intros d0 Hin.
     case (eq_domino d0 a); intro He.
@@ -337,7 +344,7 @@ Proof.
            rewrite (simpl_aux a d dl) in H0.
            simpl in H0.
            destruct H0.
-           *** Admitted.
+           *** Admitted. *)
 (*
       * contradiction.
     + admit.
