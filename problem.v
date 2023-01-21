@@ -199,9 +199,22 @@ Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
 
 Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativity).
 
-Definition disjoints_dominos_lo (dl : list domino) :=
-  forall d, In d dl -> d ## (List.remove eq_domino d dl).
 
+Fixpoint disjoints_dominos_lo_aux (d : domino) (dl : list domino) :=
+  match dl with
+  | [] => True
+  | h::t => d = h \/ disjoints_dominos_lo_aux d t
+  end.
+
+Fixpoint disjoints_dominos_lo (dl : list domino) :=
+  match dl with
+  | [] => True
+  | h::t => disjoints_dominos_lo_aux h t
+  end.
+
+
+(* Definition disjoints_dominos_lo (dl : list domino) :=
+  forall d, In d dl -> d ## (List.remove eq_domino d dl). *)
 
 (*****************************************************************************************)
 (****************************** { Lemmes sur "disjoints" } *******************************)
@@ -310,6 +323,8 @@ Proof.
   - intros. apply simp_disjlo0.
   - intros d H.
     unfold disjoints_dominos_lo.
+    unfold disjoints_dominos_lo_aux.
+
     intros d0 Hin.
     case (eq_domino d0 a); intro He.
     + rewrite He. simpl.
