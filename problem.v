@@ -1142,6 +1142,7 @@ Proof.
 Qed.
 
 Hint Resolve remove_comm.
+
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
   forall p d1 d2,
@@ -1154,39 +1155,33 @@ Proof.
   - intro eqH. rewrite eqH. auto.
   - intro neqH.
     intros.
-    (* unfold disjoints_dominos in H. *)
-    destruct d1, d2; unfold pose_domino; simpl; unfold disjoints_dominos in H;
-    induction p; try (simpl; reflexivity).
-    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2.
-      + rewrite <- eq1, eq2. reflexivity.
-      + rewrite eq2.
-        rewrite remove_hd.
-        rewrite remove_comm.
-        rewrite <- (remove_comm p c0 (dessous c)).
-        rewrite (remove_comm (remove eq_coord (dessous c0) (remove eq_coord c0 (c :: p)))
-        (dessous c) c).
-        rewrite (remove_comm (remove eq_coord c0 (c :: p)) (dessous c0) c).
-        rewrite <- (remove_comm (c::p) c c0).
-        rewrite remove_hd.
-        rewrite (remove_comm (remove eq_coord c0 p) (dessous c0) (dessous c)).
-        reflexivity.
-      + rewrite eq1.
-        rewrite remove_hd.
-        rewrite <- (remove_comm ((remove eq_coord c (c0 :: p))) c0 (dessous c)).
-        rewrite <- (remove_comm (c0 :: p) c0 c).
-        rewrite remove_hd.
-        rewrite (remove_comm p (dessous c0) c).
-        rewrite (remove_comm (remove eq_coord c p) (dessous c0) (dessous c)).
-        reflexivity.
-      + admit.
-    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2.
-      + admit.
-      + admit.
-      + admit.
-      + admit.
-    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2; admit.
-    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2; admit.
-Admitted.
+    destruct d1, d2;
+    unfold pose_domino;
+    simpl;
+    unfold disjoints_dominos in H;
+    induction p;
+    try (simpl; reflexivity).
+    * rewrite <- (remove_comm ((a :: p)\c) c0 (dessous c)).
+      rewrite <- (remove_comm ((a :: p)\c\c0) (dessous c0) (dessous c)).
+      rewrite <- (remove_comm (a :: p) c0 c).
+      rewrite <- (remove_comm ((a :: p)\c0) (dessous c0) c).
+      reflexivity.
+    * rewrite <- (remove_comm ((a :: p)\c) c0 (dessous c)).
+      rewrite <- (remove_comm ((a :: p)) c0 c).
+      rewrite <- (remove_comm ((a :: p)\c0\c) (droite c0) (dessous c)).
+      rewrite <- (remove_comm ((a :: p)\c0) c (droite c0)).
+      reflexivity.
+    * rewrite <- (remove_comm ((a :: p)\c) c0 (droite c)).
+      rewrite <- (remove_comm ((a :: p)) c0 c).
+      rewrite <- (remove_comm ((a :: p)\c0\c) (dessous c0) (droite c)).
+      rewrite <- (remove_comm ((a :: p)\c0) (dessous c0) c).
+      reflexivity.
+    * rewrite <- (remove_comm ((a :: p)\c) c0 (droite c)).
+      rewrite <- (remove_comm ((a :: p)\c\c0) (droite c0) (droite c)).
+      rewrite <- (remove_comm (a :: p) c0 c).
+      rewrite <- (remove_comm ((a :: p)\c0) (droite c0) c).
+      reflexivity.
+Qed.
 
 Lemma disj_lemma1 : forall d a a0 dl, d ## (a :: a0 :: dl) ->
    d # a /\ d ## dl.
