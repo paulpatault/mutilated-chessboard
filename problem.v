@@ -203,7 +203,7 @@ Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativ
 Fixpoint disjoints_dominos_lo_aux (d : domino) (dl : list domino) :=
   match dl with
   | [] => True
-  | h::t => d = h \/ disjoints_dominos_lo_aux d t
+  | h::t => (d # h /\ disjoints_dominos_lo_aux d t)
   end.
 
 Fixpoint disjoints_dominos_lo (dl : list domino) :=
@@ -289,13 +289,14 @@ Admitted.
         Print f_equal.
         injection H1. *)
 Lemma simpl_aux : forall a d dl,
-  (a <> d) -> remove eq_domino a (d :: a :: dl) = (d :: dl).
+  (a <> d) -> (d :: a :: dl) \ a = (d :: dl).
 Proof.
-  intros a d dl ne;
+  Admitted.
+  (* intros a d dl ne;
   case (eq_domino a d);
   intro eq.
   - contradiction.
-  - admit.
+  - admit. *)
     (* simpl.
     apply remove_hd.
     f_equal.
@@ -310,7 +311,7 @@ Proof.
     (* Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p. *)
 
 
-Admitted.
+(* Admitted. *)
 
 Lemma simp_disjlo1 :
   forall d dl,
@@ -325,10 +326,11 @@ Proof.
     unfold disjoints_dominos_lo.
     unfold disjoints_dominos_lo_aux.
     induction dl; auto.
-    right.
+    Admitted.
+    (* right.
     apply IHdl0.
     + admit.
-      Admitted.
+      Admitted. *)
     (* +
 
 
@@ -357,27 +359,13 @@ Lemma simp_disjlo2 :
   disjoints_dominos_lo (d :: dl) ->
   disjoints_dominos_l d dl.
 Proof.
-  intros d dl. revert d. induction dl.
-  - intros.
-    unfold disjoints_dominos_l.
-    trivial.
-  - intros d H.
-    unfold disjoints_dominos_l.
-    split.
-    + admit.
-    + admit.
-Admitted.
-      (* unfold disjoints_dominos. *)
+  intros d dl H.
+  destruct dl.
+  { auto. }
+  { destruct H.
+    split; assumption. }
+Qed.
 
-    (* - unfold disjoints_dominos_lo in disj.
-      simpl in *.
-      set (H := disj a). *)
-
-    (* - induction dl.
-      + unfold disjoints_dominos_lo.
-        simpl in *.
-        auto.
-      +  *)
 Hint Resolve simp_disjlo2.
 
 (*****************************************************************************************)
@@ -928,7 +916,7 @@ Proof.
     unfold case_noire in H1;
     unfold couleur_case in H2;
     rewrite H.
-  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (dessous c) (remove eq_coord c p)).
+  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (dessous c) (p\c)).
     apply (retire_case Blanc c p).
     - trivial.
     - destruct (rm_iff_mem p p' (Hauteur c)); trivial.
@@ -939,11 +927,11 @@ Proof.
     unfold pose_domino.
     simpl.
     rewrite remove_comm.
-    rewrite (retire_case_neg1 c (remove eq_coord (dessous c) p)); trivial.
+    rewrite (retire_case_neg1 c (p \ dessous c)); trivial.
     symmetry.
     apply (retire_case Blanc (dessous c) p); simpl; trivial.
     destruct (rm_iff_mem p p' (Hauteur c)); trivial. }
-  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (droite c) (remove eq_coord c p)).
+  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (droite c) (p\c)).
     apply (retire_case Blanc c p); simpl; trivial.
     apply (rm_iff_mem p p' (Largeur c)); trivial. trivial. }
   { clear H0.
@@ -952,7 +940,7 @@ Proof.
     unfold pose_domino.
     simpl.
     rewrite remove_comm.
-    rewrite (retire_case_neg1 c (remove eq_coord (droite c) p)); trivial.
+    rewrite (retire_case_neg1 c (p \ droite c)); trivial.
     symmetry.
     apply (retire_case Blanc (droite c) p); simpl; trivial.
     apply (rm_iff_mem p p' (Largeur c)).
@@ -995,7 +983,7 @@ Qed.
 
 (** comme [c] <> [droite c],
     si [c] est dans [p] alors [c] est dans [p \ (droite c)]*)
-Lemma in_simp2_droite c p : In c p -> In c (remove eq_coord (droite c) p).
+Lemma in_simp2_droite c p : In c p -> In c (p \ droite c).
 Proof.
   intro.
   apply List.in_in_remove.
@@ -1007,7 +995,7 @@ Qed.
 
 (** comme [c] <> [dessous c],
     si [c] est dans [p] alors [c] est dans [p \ (dessous c)]*)
-Lemma in_simp2 c p : In c p -> In c (remove eq_coord (dessous c) p).
+Lemma in_simp2 c p : In c p -> In c (p \ dessous c).
 Proof.
   intro.
   apply List.in_in_remove.
@@ -1019,7 +1007,7 @@ Qed.
 
 (** comme [c] <> [droite c],
     si [droite c] est dans [p] alors [droite c] est dans [p \ c]*)
-Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (remove eq_coord c p).
+Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (p\c).
 Proof.
   intro.
   apply List.in_in_remove.
@@ -1032,7 +1020,7 @@ Qed.
 
 (** comme [c] <> [dessous c],
     si [dessous c] est dans [p] alors [dessous c] est dans [p \ c]*)
-Lemma in_simp c p : In (dessous c) p -> In (dessous c) (remove eq_coord c p).
+Lemma in_simp c p : In (dessous c) p -> In (dessous c) (p\c).
 Proof.
   intro.
   apply List.in_in_remove.
@@ -1074,27 +1062,27 @@ Proof.
     unfold case_noire in H1;
     rewrite H.
   { apply_lemmas_l (Nat.Even (x c + y c)) H0 (retire_case_neg2 c p).
-    apply (retire_case Noir (dessous c) (remove eq_coord c p)); simpl; trivial.
+    apply (retire_case Noir (dessous c) (p\c)); simpl; trivial.
     - apply in_simp.
       apply (rm_iff_mem p p' (Hauteur c)).
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (dessous c) p).
     rewrite remove_comm.
-    apply (retire_case Noir c (remove eq_coord (dessous c) p)); simpl; trivial.
+    apply (retire_case Noir c (p\dessous c)); simpl; trivial.
     - apply in_simp2.
       apply (rm_iff_mem p p' (Hauteur c)).
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Even (x c + y c)) H0 (retire_case_neg2 c p).
-    apply (retire_case Noir (droite c) (remove eq_coord c p)); simpl; trivial.
+    apply (retire_case Noir (droite c) (p\c)); simpl; trivial.
     - apply in_simp_droite.
       apply (rm_iff_mem p p' (Largeur c)).
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (droite c) p).
     rewrite remove_comm.
-    apply (retire_case Noir c (remove eq_coord (droite c) p)); simpl; trivial.
+    apply (retire_case Noir c (p\droite c)); simpl; trivial.
     - apply in_simp2_droite.
       apply (rm_iff_mem p p' (Largeur c)).
       trivial.
