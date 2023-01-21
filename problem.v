@@ -1,9 +1,6 @@
 Require Import Arith Nat List Lia.
 Import ListNotations.
 
-(** arithmétique *)
-Lemma min_b_both_sides : forall a b c, a = c + 1 -> a + b = c + S b. Proof. lia. Qed.
-
 (*****************************************************************************************)
 (******************************** { Définitions de base } ********************************)
 (*****************************************************************************************)
@@ -87,23 +84,18 @@ Definition card (c : couleur) (p : plateau) :=
   | Noir  => card_no p
   end.
 
-(**
-   Fabrique une ligne d'un plateau
-   exemple :
-     mk_line n m = [ { 1; m } .. { n; m } ]
- *)
+(** Fabrique une ligne d'un plateau
+    exemple : mk_line n m = [ { 1; m } .. { n; m } ] *)
 Fixpoint mk_line (n m:nat) : list coord :=
   match n with
   | 0 => []
   | S n => {| x := n; y := m |} :: (mk_line n m)
   end.
 
-(**
-   construction d'un plateau « classique »
-   forme de carré [n] * [n]
-   exemple :
-     mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } }
- *)
+(** construction d'un plateau « classique »
+    forme de carré [n] * [n]
+    exemple :
+     mk_plateau n := { {1; 1} ; ... ; {1; n} ; ... ; {n; 1} ; { n; n } } *)
 Fixpoint mk_plateau (n:nat) :=
   match n with
   | 0 => []
@@ -304,16 +296,41 @@ Hint Resolve simp_disjlo2.
 Definition solution (p : plateau) (dl : list domino) :=
   pose_dominos dl p = [].
 
+(* Print List. *)
+Fixpoint well_formed (p : plateau) :=
+  match p with
+  | [] => True
+  | hd::tl => List.count_occ eq_coord p hd = 1 /\ well_formed tl
+  end.
+
+(* Lemma lemmahd : forall p, well_formed p -> forall c, (c :: p) \ c = p.
+Proof.
+  induction p.
+  - intros.
+    unfold remove.
+    case (eq_coord c c).
+    + trivial.
+    + contradiction.
+  - case (eq_coord c c);
+    case (eq_coord c a);
+    intros eq1 eq2.
+    + rewrite eq1. *)
+
+
+
 (** un définition possible de la résolubilité d'un plateau
     un plateau est résoluble s'il existe un liste de domino
     telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
+  well_formed p /\
   exists dl : list domino, solution p dl /\ disjoints_dominos_lo dl.
 
 
 (*****************************************************************************************)
 (********************************* { Classical board } ***********************************)
 (*****************************************************************************************)
+
+(** On remarque ici que le plateau non amputé a une solution *)
 
 (** fonctions de liste *)
 Fixpoint init_aux {A : Type} (i len : nat) (f : nat -> A) : list A :=
@@ -332,28 +349,103 @@ Definition sol_base :=
   (init 8 (fun j =>
   init 4 (fun i => mk_domino_H j (i*2)))).
 
-(* Eval compute in sol_base. *)
-
-(** prouvable par un calcul,
-    mais de complexité trop grande pour être fait en pratique *)
-Hypothesis disj_base : disjoints_dominos_lo sol_base.
-
-(** la solution fonctionne bien *)
+(** la solution fonctionne bien
+    → pas mal de calcul ici (8 secondes sur ma machine) *)
 Theorem classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
-  exists sol_base.
   split.
-  - unfold solution.
-    simpl.
-    unfold pose_domino.
-    simpl.
-    trivial.
-  - apply disj_base.
+  { simpl.
+    intuition. }
+  { exists sol_base.
+    split.
+    - unfold solution.
+      simpl.
+      unfold pose_domino.
+      simpl.
+      trivial.
+    - simpl. intuition; discriminate H. }
 Qed.
 
 (*****************************************************************************************)
-(************************************ { Lemmes } *****************************************)
+(********************************** { Lemmes (WF) } **************************************)
+(*****************************************************************************************)
+
+Lemma easy_occ :
+  forall p a, count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0.
+Proof.
+  induction p.
+  trivial.
+  intros.
+  case (eq_coord a a0).
+  - intro e.
+    rewrite e in H.
+    simpl in H.
+    case (eq_coord a0 a0); intro e2.
+    -- simpl in H. admit.
+    -- contradiction.
+  - intro e.
+Admitted.
+
+Lemma wf_minus : forall p, well_formed p -> forall c, well_formed (p \ c).
+Proof.
+  induction p.
+  - simpl. trivial.
+  - intros wf c.
+    case (eq_coord a c); intro eq.
+    + rewrite eq.
+      simpl.
+      case (eq_coord c c); intro eq2.
+      * apply IHp.
+        unfold well_formed.
+        unfold well_formed in wf.
+        destruct wf.
+        assumption.
+      * contradiction.
+    + simpl.
+      case (eq_coord c a); intro eq2.
+      -- congruence.
+      -- unfold well_formed.
+         split.
+         ++ simpl.
+            case (eq_coord a a); intro eq3.
+            ** unfold well_formed in wf.
+               destruct wf.
+               eapply easy_occ in H.
+               admit.
+               (* assumption. *)
+            ** contradiction.
+
+         ++ apply IHp.
+          unfold well_formed in wf.
+          destruct wf.
+          assumption.
+Admitted.
+
+Lemma wf_minus_d :
+  forall p, well_formed p -> forall d, well_formed (pose_domino d p).
+Admitted.
+
+Lemma wf_minus_dl :
+  forall p, well_formed p -> forall dl, well_formed (pose_dominos dl p).
+Admitted.
+
+
+Lemma wf_minus_hd :
+  forall p a, well_formed (a :: p) -> well_formed p.
+Proof.
+  induction p.
+  + simpl.
+    split.
+  + intros a0 wf.
+    unfold well_formed.
+    unfold well_formed in wf.
+    destruct wf as (h1, (h2, h3)).
+    split; assumption.
+Qed.
+
+(*****************************************************************************************)
+(************************************ { Lemmes}  *****************************************)
 (*****************************************************************************************)
 
 (** étant donnée la case [c], celle en dessous de [c] a la couleur opposée *)
@@ -654,12 +746,24 @@ Proof.
       congruence.
 Qed.
 
+Lemma eq_rw {P}: forall a (x y : P), (if eq_coord a a then x else y) = x.
+Proof.
+  intros.
+  case (eq_coord a a).
+  intros.
+  trivial.
+  contradiction.
+Qed.
+
 (** si on retire une case de la couleur que l'on compte, alors on en a une de moins *)
 Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
-  couleur_case col a -> List.In a p -> card col (p \ a) + 1 = card col p.
+  well_formed p ->
+  couleur_case col a ->
+  List.In a p ->
+  card col (p \ a) + 1 = card col p.
 Proof.
   case col;
-  induction p; intros Bc Hin; try contradiction.
+  induction p; intros wfp Bc Hin; try contradiction.
   {
     case (eq_coord a a0); intro H.
     + rewrite H.
@@ -677,6 +781,7 @@ Proof.
           rewrite <- (rw_util Blanc a0 a p H).
           apply cons_card.
           assumption.
+        * apply (wf_minus_hd p a0); assumption.
         * eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
@@ -685,10 +790,11 @@ Proof.
         rewrite (card_eq_hdS Blanc a0 (remove eq_coord a p) p).
         * reflexivity.
         * apply IHp; trivial.
-          eapply List.in_inv in Hin.
-          destruct Hin.
-          -- rewrite H1 in H. contradiction.
-          -- assumption.
+          ++ apply (wf_minus_hd p a0); assumption.
+          ++ eapply List.in_inv in Hin.
+             destruct Hin.
+             -- rewrite H1 in H. contradiction.
+             -- assumption.
   }
   {
     case (eq_coord a a0); intro H.
@@ -704,10 +810,11 @@ Proof.
         rewrite (card_eq_hdS Noir a0 (remove eq_coord a p) p).
         * reflexivity.
         * apply IHp; trivial.
-          eapply List.in_inv in Hin.
-          destruct Hin.
-          -- rewrite H1 in H. contradiction.
-          -- assumption.
+          ++ apply (wf_minus_hd p a0); assumption.
+          ++ eapply List.in_inv in Hin.
+            destruct Hin.
+            -- rewrite H1 in H. contradiction.
+            -- assumption.
       - rewrite (cons_card Noir a0 p H0).
         rewrite <- IHp; trivial.
         * rewrite Nat.add_1_r, Nat.add_1_r.
@@ -715,6 +822,8 @@ Proof.
           rewrite <- (rw_util Noir a0 a p H).
           apply cons_card.
           assumption.
+        * apply (wf_minus_hd p a0); assumption.
+
         * eapply List.in_inv in Hin.
           destruct Hin.
           -- rewrite H1 in H. contradiction.
@@ -832,10 +941,11 @@ Ltac apply_lemmas cp h f :=
     [p] a exactement une case blanche de plus que [p']
  *)
 Lemma invariant_blanc : forall p p': plateau, forall d: domino,
+  well_formed p ->
   p' = pose_domino d p ->
   card Blanc p = card Blanc p' + 1.
 Proof.
-  intros p p' d H.
+  intros p p' d wfp H.
   case (domino_bicolor d).
   intros H0 H1.
   destruct d; simpl in *; destruct (bl_or_no c);
@@ -844,7 +954,7 @@ Proof.
     unfold couleur_case in H2;
     rewrite H.
   { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (dessous c) (p\c)).
-    apply (retire_case Blanc c p).
+    apply (retire_case Blanc c p wfp).
     - trivial.
     - destruct (rm_iff_mem p p' (Hauteur c)); trivial.
     - assumption. }
@@ -856,10 +966,10 @@ Proof.
     rewrite remove_comm.
     rewrite (retire_case_neg1 c (p \ dessous c)); trivial.
     symmetry.
-    apply (retire_case Blanc (dessous c) p); simpl; trivial.
+    apply (retire_case Blanc (dessous c) p wfp); simpl; trivial.
     destruct (rm_iff_mem p p' (Hauteur c)); trivial. }
   { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (droite c) (p\c)).
-    apply (retire_case Blanc c p); simpl; trivial.
+    apply (retire_case Blanc c p wfp); simpl; trivial.
     apply (rm_iff_mem p p' (Largeur c)); trivial. trivial. }
   { clear H0.
     assert (H2_cpy : Nat.Odd (x c + y c)); trivial.
@@ -869,7 +979,7 @@ Proof.
     rewrite remove_comm.
     rewrite (retire_case_neg1 c (p \ droite c)); trivial.
     symmetry.
-    apply (retire_case Blanc (droite c) p); simpl; trivial.
+    apply (retire_case Blanc (droite c) p wfp); simpl; trivial.
     apply (rm_iff_mem p p' (Largeur c)).
     trivial. }
 Qed.
@@ -977,10 +1087,11 @@ Ltac apply_lemmas_l cp h f :=
     [p] a exactement une case noire de plus que [p']
  *)
 Lemma invariant_noir : forall p p': plateau, forall d: domino,
+  well_formed p ->
   p' = pose_domino d p ->
   card Noir p  = card Noir  p' + 1.
 Proof.
-  intros p p' d H.
+  intros p p' d wfp H.
   case (domino_bicolor d).
   intros H0 H1.
   destruct d; simpl in *; destruct (bl_or_no c);
@@ -989,7 +1100,8 @@ Proof.
     unfold case_noire in H1;
     rewrite H.
   { apply_lemmas_l (Nat.Even (x c + y c)) H0 (retire_case_neg2 c p).
-    apply (retire_case Noir (dessous c) (p\c)); simpl; trivial.
+    set (t := wf_minus p wfp c).
+    apply (retire_case Noir (dessous c) (p\c) t); simpl; trivial.
     - apply in_simp.
       apply (rm_iff_mem p p' (Hauteur c)).
       trivial.
@@ -997,12 +1109,14 @@ Proof.
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (dessous c) p).
     rewrite remove_comm.
     apply (retire_case Noir c (p\dessous c)); simpl; trivial.
+    - apply (wf_minus p wfp (dessous c)).
     - apply in_simp2.
       apply (rm_iff_mem p p' (Hauteur c)).
       trivial.
     - unfold case_blanche. assumption. }
   { apply_lemmas_l (Nat.Even (x c + y c)) H0 (retire_case_neg2 c p).
     apply (retire_case Noir (droite c) (p\c)); simpl; trivial.
+    - apply (wf_minus p wfp c).
     - apply in_simp_droite.
       apply (rm_iff_mem p p' (Largeur c)).
       trivial.
@@ -1010,6 +1124,7 @@ Proof.
   { apply_lemmas_l (Nat.Odd (x c + y c)) H1 (retire_case_neg2 (droite c) p).
     rewrite remove_comm.
     apply (retire_case Noir c (p\droite c)); simpl; trivial.
+    - apply (wf_minus p wfp (droite c)).
     - apply in_simp2_droite.
       apply (rm_iff_mem p p' (Largeur c)).
       trivial.
@@ -1018,11 +1133,12 @@ Qed.
 
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant : forall p p': plateau, forall d: domino,
+  well_formed p ->
   p' = pose_domino d p ->
   card Blanc p = card Blanc p' + 1 /\
   card Noir p  = card Noir  p' + 1.
 Proof.
-  intros p p' d H.
+  intros p p' d wfp H.
   split.
   - apply (invariant_blanc p p' d); assumption.
   - apply (invariant_noir p p' d);  assumption.
@@ -1043,13 +1159,14 @@ Proof.
 Qed.
 
 Lemma pose_domino_dont_change_card : forall d p,
+  well_formed p ->
   card_no (pose_domino d p) = card_bl (pose_domino d p) ->
   card_no p = card_bl p.
 Proof.
-  intros d p.
+  intros d p wfp.
   set (p' := pose_domino d p).
   assert (p' = pose_domino d p). auto.
-  set (H1 := invariant p p' d H).
+  set (H1 := invariant p p' d wfp H).
   destruct H1.
   simpl in H0, H1.
   rewrite H0, H1.
@@ -1212,9 +1329,11 @@ Qed.
                             retire une case de chaque couleur
     remarque : les preuves des 8 sous cas sont très proches
                mais je n'ai pas réussi à les factoriser *)
-Lemma retire_domino : forall p d col, card col p = S (card col (pose_domino d p)).
+Lemma retire_domino : forall p d col,
+  well_formed p ->
+  card col p = S (card col (pose_domino d p)).
 Proof.
-  intros p d col.
+  intros p d col wfp.
   pose (H := rm_iff_mem p (pose_domino d p) d eq_refl).
   destruct H as (H1 & H2).
   case_eq d;
@@ -1242,7 +1361,9 @@ Proof.
     + simpl.
       rewrite (retire_case_neg1 c);
       auto.
-    + apply dessous_inv_col in col_c.
+    + apply (wf_minus p wfp c).
+    +
+      apply dessous_inv_col in col_c.
       auto.
   }
   {
@@ -1254,6 +1375,7 @@ Proof.
     rewrite <- Nat.add_1_r.
     symmetry.
     rewrite (retire_case Noir); auto.
+    apply (wf_minus p wfp c).
   }
   {
     rewrite <- Nat.add_1_r.
@@ -1280,6 +1402,7 @@ Proof.
     + simpl.
       rewrite (retire_case_neg1 c);
       auto.
+    + apply (wf_minus p wfp c).
     + apply droite_inv_col in col_c.
       auto.
   }
@@ -1291,6 +1414,7 @@ Proof.
     rewrite <- Nat.add_1_r.
     symmetry.
     rewrite (retire_case Noir); auto.
+    apply (wf_minus p wfp c).
   }
   {
     rewrite <- Nat.add_1_r.
@@ -1306,23 +1430,29 @@ Qed.
 (** retirer [N] dominos = retirer [N] cases [blanches|noires] *)
 Lemma rm_add_b :
   forall p col dl,
+  well_formed p ->
   (disjoints_dominos_lo dl) ->
   card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
   { simpl. trivial. }
-  { intro disj.
+  { intros wfp disj.
     simpl.
     rewrite rw_util3.
     rewrite rw_util4.
     set (p' := (pose_dominos dl p)).
     rewrite IHdl.
-    apply min_b_both_sides.
-    rewrite Nat.add_1_r.
-    rewrite (retire_domino p' a).
-    reflexivity.
-    - apply (simp_disjlo1 a). assumption.
-    - apply (simp_disjlo2 a). assumption.
+    cut (forall a b c, a = c + 1 -> a + b = c + S b).
+    + intro min_b_both_sides.
+      apply min_b_both_sides.
+      rewrite Nat.add_1_r.
+      rewrite (retire_domino p' a).
+      reflexivity.
+      apply (wf_minus_dl p wfp).
+    + lia.
+    + assumption.
+    + apply (simp_disjlo1 a). assumption.
+    + apply (simp_disjlo2 a). assumption.
   }
 Qed.
 
@@ -1333,12 +1463,13 @@ Qed.
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant_extended_to_dominolist :
   forall p p' dl,
+  well_formed p ->
   disjoints_dominos_lo dl ->
   pose_dominos dl p = p' ->
   card Blanc p = card Blanc p' + (List.length dl) /\
   card Noir p = card Noir p' + (List.length dl).
 Proof.
-  intros p p' dl disj.
+  intros p p' dl wfp disj.
   destruct dl; intro H; symmetry in H.
   { rewrite H. simpl. lia. }
   {
@@ -1360,7 +1491,7 @@ Qed.
 Theorem resoluble_invariant : forall p, resoluble p -> card Noir p = card Blanc p.
 Proof.
   intros p H.
-  destruct H as (sol, H).
+  destruct H as (wf, (sol, H)).
   assert (H' := H).
   destruct H.
   unfold solution in H.
@@ -1372,12 +1503,14 @@ Proof.
     rewrite <- H in H1.
     apply (pose_domino_dont_change_card a).
     assumption.
-    apply simp_disjlo1 in H0.
     assumption.
+    apply simp_disjlo1 in H0.
+    - apply (wf_minus_d p wf a).
+    - destruct H0. assumption.
   }
 Qed.
 
-(** ce qu'on voulait prouver ! *)
+(** Le plateau amputé n'a pas de solution ! *)
 Corollary mutilated_board : ~ resoluble plateau_coupe.
 Proof.
   intro.
