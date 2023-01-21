@@ -158,8 +158,9 @@ Definition pose_domino (d : domino) (p : plateau) : plateau :=
 Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
   fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
 
-(** hyp : lorsque l'on écrit [pose_domino d p] on suppose
-          toujours que [p] contient [case_prises d] *)
+(** hyp : si l'on a un [p'] tq [p' = pose_domino d p]
+          alors c'est que les cases prisent par le domino
+          étaient présentes dans [p] *)
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
 
@@ -209,7 +210,7 @@ Fixpoint disjoints_dominos_lo_aux (d : domino) (dl : list domino) :=
 Fixpoint disjoints_dominos_lo (dl : list domino) :=
   match dl with
   | [] => True
-  | h::t => disjoints_dominos_lo_aux h t
+  | h::t => disjoints_dominos_lo_aux h t /\ disjoints_dominos_lo t
   end.
 
 
@@ -256,63 +257,6 @@ Qed.
 
 Hint Resolve simp_disjlo0b.
 
-Goal
-  forall d1 d2 dl,
-  disjoints_dominos_lo (d1 :: d2 :: dl) ->
-  disjoints_dominos_lo (d2 :: d1 :: dl).
-Proof.
-  intros d1 d2 dl.
-  revert d1 d2.
-  induction dl.
-  (* - intros d1 d2 H. *)
-  - intro H.
-    unfold disjoints_dominos_lo in *.
-    intros d Hind.
-    simpl in *.
-    (* destruct Hind; *)
-    admit.
-Admitted.
-    (* + rewrite H0.
-      case (eq_domino d d);
-      case (eq_domino d d1);
-      intros Heqdd1 Heqdd; auto.
-      *
-        unfold disjoints_dominos_l.
-        split; auto.
-        unfold disjoints_dominos.
-        split.
-        intro.
-        elim Heqdd1.
-        unfold case_prise in H1.
-        simpl in H1.
-
-        Print f_equal.
-        injection H1. *)
-Lemma simpl_aux : forall a d dl,
-  (a <> d) -> (d :: a :: dl) \ a = (d :: dl).
-Proof.
-  Admitted.
-  (* intros a d dl ne;
-  case (eq_domino a d);
-  intro eq.
-  - contradiction.
-  - admit. *)
-    (* simpl.
-    apply remove_hd.
-    f_equal.
-    case (eq_domino a a);
-    intro eqa.
-    * 
-
-    rewrite e.
-    case (eq_domino d d); intro e2.
-    * 
-    simpl. *)
-    (* Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p. *)
-
-
-(* Admitted. *)
-
 Lemma simp_disjlo1 :
   forall d dl,
   disjoints_dominos_lo (d :: dl) ->
@@ -323,34 +267,14 @@ Proof.
   induction dl.
   - intros. apply simp_disjlo0.
   - intros d H.
+    unfold disjoints_dominos_lo in H.
     unfold disjoints_dominos_lo.
-    unfold disjoints_dominos_lo_aux.
-    induction dl; auto.
-    Admitted.
-    (* right.
-    apply IHdl0.
-    + admit.
-      Admitted. *)
-    (* +
-
-
-    intros d0 Hin.
-    case (eq_domino d0 a); intro He.
-    + rewrite He. simpl.
-      case (eq_domino a a); intro Hea.
-      * unfold disjoints_dominos_lo in H.
-        pose (HH := H a).
-        assert (In a (d :: a :: dl)).
-        ** simpl. right. left. reflexivity.
-        ** apply HH in H0.
-           rewrite (simpl_aux a d dl) in H0.
-           simpl in H0.
-           destruct H0.
-           *** Admitted. *)
-(*
-      * contradiction.
-    + admit.
-Admitted. *)
+    destruct H.
+    destruct H0.
+    split.
+    + assumption.
+    + assumption.
+Qed.
 
 Hint Resolve simp_disjlo1.
 
@@ -363,7 +287,10 @@ Proof.
   destruct dl.
   { auto. }
   { destruct H.
-    split; assumption. }
+    split;
+    unfold disjoints_dominos_lo_aux in H;
+    destruct H;
+    assumption. }
 Qed.
 
 Hint Resolve simp_disjlo2.
