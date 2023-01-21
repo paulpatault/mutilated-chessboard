@@ -141,6 +141,9 @@ Defined.
 (** notation à la \setminus *)
 Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
 
+(** Les listes sont un "modèle" pour un ensemble, on peut supposer le lemme suivant : *)
+Hypothesis remove_hd : forall c p, (c :: p) \ c = p.
+
 (** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
 Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
 
@@ -167,17 +170,22 @@ Eval compute in pose_domino (mk_domino_H 4 4) plateau_coupe.
 
 Definition disjoints_dominos (d1 d2:domino) :=
   match d1, d2 with
-  | Hauteur c1, Hauteur c2
-  | Largeur c1, Largeur c2 =>
-      c1 <> c2 /\
+  | Hauteur c1, Hauteur c2 =>
+              c1 <> c2 /\
       dessous c1 <> c2 /\
-      dessous c2 <> c1
+              c1 <> dessous c2 /\
+      dessous c1 <> dessous c2
+  | Largeur c1, Largeur c2 =>
+              c1 <> c2 /\
+       droite c1 <> c2 /\
+              c1 <> droite c2 /\
+       droite c1 <> droite c2
   | Hauteur c1, Largeur c2
   | Largeur c2, Hauteur c1 =>
-      c1 <> c2 /\
+              c1 <> c2 /\
+              c1 <> droite c2 /\
       dessous c1 <> c2 /\
-      dessous c1 <> droite c2 /\
-      droite  c2 <> c1
+      dessous c1 <> droite c2
   end.
 
 Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
@@ -267,7 +275,29 @@ Admitted.
 
         Print f_equal.
         injection H1. *)
+Lemma simpl_aux : forall a d dl,
+  (a <> d) -> remove eq_domino a (d :: a :: dl) = (d :: dl).
+Proof.
+  intros a d dl ne;
+  case (eq_domino a d);
+  intro eq.
+  - contradiction.
+  - admit.
+    (* simpl.
+    apply remove_hd.
+    f_equal.
+    case (eq_domino a a);
+    intro eqa.
+    * 
 
+    rewrite e.
+    case (eq_domino d d); intro e2.
+    * 
+    simpl. *)
+    (* Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p. *)
+
+
+Admitted.
 
 Lemma simp_disjlo1 :
   forall d dl,
@@ -284,10 +314,19 @@ Proof.
     case (eq_domino d0 a); intro He.
     + rewrite He. simpl.
       case (eq_domino a a); intro Hea.
-      * admit.
+      * unfold disjoints_dominos_lo in H.
+        pose (HH := H a).
+        assert (In a (d :: a :: dl)).
+        ** simpl. right. left. reflexivity.
+        ** apply HH in H0.
+           rewrite (simpl_aux a d dl) in H0.
+           simpl in H0.
+           destruct H0.
+           *** Admitted.
+(*
       * contradiction.
     + admit.
-Admitted.
+Admitted. *)
 
 Hint Resolve simp_disjlo1.
 
@@ -609,9 +648,6 @@ Proof.
   rewrite H1 in H.
   contradiction.
 Qed.
-
-(** Les listes sont un "modèle" pour un ensemble, on peut supposer le lemme suivant : *)
-Hypothesis remove_hd : forall c, forall p, (c :: p) \ c = p.
 
 (** Si on a une case blanche et qu'on l'ajoute à un plateau
     alors le nombre de cases blanches du plateau augmente de 1 *)
@@ -1083,24 +1119,73 @@ Proof.
   auto.
 Qed.
 
+
+Lemma write : forall d1 d2, d1 # d2 ->
+  match d1, d2 with
+  | Largeur c1, Largeur c2 => c1 <> c2 /\ droite c1 <> droite c2
+  | Hauteur c1, Hauteur c2 => c1 <> c2 /\ dessous c1 <> dessous c2
+  | Largeur c1, Hauteur c2
+  | Hauteur c2, Largeur c1 =>
+             c1 <> c2 /\
+      droite c1 <> c2 /\
+             c1 <> dessous c2 /\
+      droite c1 <> dessous c2
+  end.
+Proof.
+  intros.
+  case d1, d2;
+  unfold disjoints_dominos in H;
+  destruct H;
+  destruct H0;
+  destruct H1;
+  auto.
+Qed.
+
+Hint Resolve remove_comm.
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
-  forall p d1 d2, d1 # d2 -> pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
+  forall p d1 d2,
+  d1 # d2 ->
+  pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
 Proof.
   intros p d1 d2.
   revert p.
   case (eq_domino d1 d2).
   - intro eqH. rewrite eqH. auto.
   - intro neqH.
-    induction p; auto.
-    destruct d1, d2;
-    case (eq_coord a c);
-    case (eq_coord a c0);
-    intros eq1 eq2 dijs; try congruence.
-    + rewrite eq2.
-      case (eq_coord c c0); intro.
-      * rewrite eq2 in *. contradiction.
-      * simpl.
+    intros.
+    (* unfold disjoints_dominos in H. *)
+    destruct d1, d2; unfold pose_domino; simpl; unfold disjoints_dominos in H;
+    induction p; try (simpl; reflexivity).
+    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2.
+      + rewrite <- eq1, eq2. reflexivity.
+      + rewrite eq2.
+        rewrite remove_hd.
+        rewrite remove_comm.
+        rewrite <- (remove_comm p c0 (dessous c)).
+        rewrite (remove_comm (remove eq_coord (dessous c0) (remove eq_coord c0 (c :: p)))
+        (dessous c) c).
+        rewrite (remove_comm (remove eq_coord c0 (c :: p)) (dessous c0) c).
+        rewrite <- (remove_comm (c::p) c c0).
+        rewrite remove_hd.
+        rewrite (remove_comm (remove eq_coord c0 p) (dessous c0) (dessous c)).
+        reflexivity.
+      + rewrite eq1.
+        rewrite remove_hd.
+        rewrite <- (remove_comm ((remove eq_coord c (c0 :: p))) c0 (dessous c)).
+        rewrite <- (remove_comm (c0 :: p) c0 c).
+        rewrite remove_hd.
+        rewrite (remove_comm p (dessous c0) c).
+        rewrite (remove_comm (remove eq_coord c p) (dessous c0) (dessous c)).
+        reflexivity.
+      + admit.
+    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2; admit.
+    * case (eq_coord a c); case (eq_coord a c0); intros eq1 eq2; admit.
 Admitted.
 
 Lemma disj_lemma1 : forall d a a0 dl, d ## (a :: a0 :: dl) ->
