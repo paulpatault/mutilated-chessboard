@@ -322,21 +322,6 @@ Fixpoint well_formed (p : plateau) :=
   | hd::tl => List.count_occ eq_coord p hd = 1 /\ well_formed tl
   end.
 
-(* Lemma lemmahd : forall p, well_formed p -> forall c, (c :: p) \ c = p.
-Proof.
-  induction p.
-  - intros.
-    unfold remove.
-    case (eq_coord c c).
-    + trivial.
-    + contradiction.
-  - case (eq_coord c c);
-    case (eq_coord c a);
-    intros eq1 eq2.
-    + rewrite eq1. *)
-
-
-
 (** un définition possible de la résolubilité d'un plateau
     un plateau est résoluble s'il existe un liste de domino
     telle que lorsque les domino seront posés le plateau sera vide *)
@@ -537,6 +522,19 @@ Proof.
     split; assumption.
 Qed.
 
+(* Lemma wf_minus_hd2 :
+  forall p a, ~ In a p -> well_formed (a :: (p\a)) -> well_formed p.
+Proof.
+  induction p.
+  + simpl.
+    split.
+  + intros a0 nin wf.
+    unfold well_formed.
+    unfold well_formed in wf.
+    destruct wf.
+    split.
+Qed. *)
+
 Lemma rw10 : forall x p, (x :: p) \ x = p \ x.
 Proof.
   intros x p.
@@ -555,70 +553,143 @@ Qed.
 
 Print List.
 
+Fixpoint sublist (pp p : plateau) :=
+  match pp with
+  | [] => True
+  | h::t => In h p /\ sublist t (p\h)
+  end.
+
+Lemma wf_minus_ll :
+  forall p pp, well_formed p -> sublist pp p -> well_formed pp.
+Proof.
+  intros p pp.
+  revert p.
+  induction pp.
+  - intros. auto.
+  - intros.
+    unfold sublist in H0.
+    destruct H0 as (H01, H02).
+    set (HH := IHpp (p\a) (wf_minus p H a) H02).
+  Admitted.
+
+Lemma sub_refl : forall a, well_formed a -> sublist a a.
+Proof.
+  induction a.
+  - simpl. trivial.
+  - simpl.
+    split.
+    + left; reflexivity.
+    + rewrite eq_rw.
+      rewrite eq_rw in H.
+      destruct H.
+      apply arith in H.
+      apply count_occ_not_In in H.
+      rewrite notin_remove.
+      apply IHa.
+      assumption.
+      assumption.
+Qed.
+
+Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
+Proof.
+  (* induction p.
+  - simpl. trivial.
+  - intros. *)
+Admitted.
+
+
+Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
+Proof.
+  induction a.
+  { intros. trivial. }
+  { intros b c wf H H0.
+    simpl.
+    split.
+    cut (sublist (a :: a0) b -> In a b).
+    - intro.
+      cut (In a b -> sublist b c -> In a c).
+      -- intros. apply H2. apply H1. assumption. assumption.
+      -- intros. admit.
+    - intros. admit.
+    - apply (IHa (b\a) (c\a)).
+      + apply (wf_minus_hd a0 a wf).
+      + admit.
+      + apply sub_rm. assumption.
+  }
+Admitted.
+
+Lemma rw_wf_in : forall p a, well_formed (a :: p) -> p \ a = p.
+Admitted.
+
+Lemma sub_cor : forall p d, well_formed p -> sublist (p \ d) p /\ sublist p (d::p).
+Proof.
+  induction p.
+  - simpl. intro. split; trivial.
+  - intros.
+    destruct (IHp a) as (IH1, IH2).
+    apply (wf_minus_hd p a H).
+    split.
+    * case (eq_coord d a); intro eq.
+      + rewrite eq.
+        simpl.
+        rewrite eq_rw.
+        apply (sub_trans (p\a) p (a::p)); try assumption.
+        apply (wf_minus p (wf_minus_hd p a H) a).
+      + simpl.
+        rewrite eq_rw2; try assumption.
+        unfold sublist.
+        split.
+        -- apply in_eq.
+        -- simpl. rewrite eq_rw.
+           rewrite (rw_wf_in p a); try assumption.
+           destruct (IHp d); try apply (wf_minus_hd p a H).
+           assumption.
+    * unfold sublist.
+      split.
+      + simpl; right; left; trivial.
+      + simpl.
+        case (eq_coord d a); intro eq; rewrite eq_rw.
+        -- rewrite eq. rewrite eq_rw.
+           rewrite rw_wf_in.
+           simpl.
+           apply sub_refl.
+           --- apply (wf_minus_hd p a H).
+           --- assumption.
+        -- rewrite eq_rw2.
+           ++ rewrite rw_wf_in; try assumption.
+              set (H3 := IHp d (wf_minus_hd p a H)).
+              destruct H3.
+              assumption.
+           ++ intro. apply eq. symmetry. assumption.
+Qed.
+
+Lemma sublemma : forall d p, well_formed p -> sublist (pose_domino d p) p.
+Proof.
+  destruct d; intros; unfold pose_domino; simpl.
+  - set (H1 := sub_cor p c).
+    destruct H1; try assumption.
+    set (H2 := sub_cor (p\c) (dessous c)).
+    destruct H2.
+    apply (wf_minus p H c).
+    set (wfp_c_dc := wf_minus (p\c) (wf_minus p H c) (dessous c)).
+    apply (sub_trans (p\c\dessous c) (p\c) p wfp_c_dc H2 H0).
+  - set (H1 := sub_cor p c).
+    destruct H1; try assumption.
+    set (H2 := sub_cor (p\c) (droite c)).
+    destruct H2.
+    apply (wf_minus p H c).
+    set (wfp_c_dc := wf_minus (p\c) (wf_minus p H c) (droite c)).
+    apply (sub_trans (p\c\droite c) (p\c) p wfp_c_dc H2 H0).
+Qed.
+
 Lemma wf_minus_d :
   forall p, well_formed p -> forall d, well_formed (pose_domino d p).
 Proof.
-  induction p.
-  + split.
-  + intros wfap d.
-    assert (wfap' := wfap).
-    destruct d; unfold pose_domino; simpl.
-    - case (eq_coord c a); intro e.
-      * apply (wf_minus_hd p a) in wfap.
-        set (pp := IHp wfap (Hauteur c)).
-        unfold pose_domino in pp.
-        simpl in pp.
-        assumption.
-      * apply (wf_minus_hd p a) in wfap.
-        set (pp := IHp wfap (Hauteur c)).
-        unfold pose_domino in pp.
-        simpl in pp.
-        case (eq_coord (dessous c) a); intro e2.
-        ++ rewrite <- e2.
-           rewrite rw10.
-           assumption.
-
-        ++ rewrite rw11; try assumption.
-           set (t := wf_minus (p) wfap c).
-           set (t' := wf_minus (p\c) t (dessous c)).
-           simpl.
-           rewrite <- rw10.
-           rewrite eq_rw.
-           split.
-           -- apply occ_arith.
-              assumption.
-              rewrite List.count_occ_cons_neq; try assumption.
-              simpl in t.
-              unfold well_formed in t.
-              admit.
-           -- rewrite rw10. assumption.
-    - case (eq_coord c a); intro e.
-      * apply (wf_minus_hd p a) in wfap.
-        set (pp := IHp wfap (Largeur c)).
-        unfold pose_domino in pp.
-        simpl in pp.
-        assumption.
-      * apply (wf_minus_hd p a) in wfap.
-        set (pp := IHp wfap (Largeur c)).
-        unfold pose_domino in pp.
-        simpl in pp.
-        case (eq_coord (droite c) a); intro e2.
-        ++ rewrite <- e2.
-           rewrite rw10.
-           assumption.
-        ++ rewrite rw11; try assumption.
-           set (t := wf_minus (p) wfap c).
-           set (t' := wf_minus (p\c) t (droite c)).
-           simpl.
-           rewrite <- rw10.
-           rewrite eq_rw.
-           split.
-           -- apply occ_arith.
-              assumption.
-              rewrite List.count_occ_cons_neq; try assumption.
-              admit.
-           -- rewrite rw10. assumption.
-Admitted.
+  intros.
+  cut (sublist (pose_domino d p) p).
+  + apply wf_minus_ll. assumption.
+  + apply sublemma. assumption.
+Qed.
 
 Lemma rw12 : forall dl a p,
   (fold_left (fun (p0 : plateau) (d : domino) => pose_domino d p0) dl
