@@ -390,6 +390,9 @@ Qed.
 (********************************** { Lemmes (WF) } **************************************)
 (*****************************************************************************************)
 
+
+Lemma arith : forall a, a = 0 <-> S a = 1. Proof. lia. Qed.
+
 Lemma easy_occ :
   forall p a, well_formed (a::p) -> count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0.
 Proof.
@@ -401,13 +404,23 @@ Proof.
     rewrite e in H.
     simpl in H.
     case (eq_coord a0 a0); intro e2.
-    -- 
-       admit.
+    -- rewrite eq_rw in H.
+       rewrite eq_rw in H.
+       apply arith in H.
+       discriminate.
     -- contradiction.
   - intro e.
-Admitted.
-
-Lemma arith : forall a, a = 0 -> S a = 1. Proof. lia. Qed.
+    unfold well_formed in wf.
+    destruct wf.
+    apply count_occ_not_In.
+    simpl in H0.
+    rewrite eq_rw in H0.
+    apply arith in H0.
+    rewrite eq_rw2 in H0; try assumption.
+    apply count_occ_not_In in H0.
+    apply not_in_cons.
+    auto.
+Qed.
 
 Lemma list_aux2 :
   forall (a a0 : coord) p, a <> a0 -> In a0 (a :: p) -> In a0 p.
