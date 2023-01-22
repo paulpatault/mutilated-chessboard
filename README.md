@@ -56,11 +56,19 @@ L'échiquer est représenté par un ensemble de cases :
   Definition solution (p : plateau) (dl : list domino) :=
     pose_dominos dl p = [].
   ```
-
+- `well_formed p` : `p` est bien formé si il ne contient pas de doublon
+  ```coq
+  Fixpoint well_formed (p : plateau) :=
+    match p with
+    | [] => True
+    | hd::tl => List.count_occ eq_coord p hd = 1 /\ well_formed tl
+    end.
+  ```
 - `resoluble p` : `p` est résoluble s'il existe une solution
   ```coq
   Definition resoluble (p : plateau) :=
-    exists dl : list domino, solution p dl.
+    well_formed p /\
+    exists dl : list domino, solution p dl /\ disjoints_dominos_lo dl.
   ```
 - Notations
   * `l \ e` : on retire `e` de la liste `l`

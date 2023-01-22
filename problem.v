@@ -115,6 +115,25 @@ Proof.
   decide equality; decide equality.
 Defined.
 
+Lemma eq_rw {P}:
+  forall a (x y : P), (if eq_coord a a then x else y) = x.
+Proof.
+  intros.
+  case (eq_coord a a).
+  intros.
+  trivial.
+  contradiction.
+Qed.
+
+Lemma eq_rw2 {P}:
+  forall a b (x y : P), a <> b -> (if eq_coord a b then x else y) = y.
+Proof.
+  intros.
+  case (eq_coord a b).
+  - contradiction.
+  - intro. trivial.
+Qed.
+
 (** l'égalité entre dominos est décidable *)
 Lemma eq_domino : forall a b : domino, {a = b} + {a <> b}.
 Proof.
@@ -372,26 +391,96 @@ Qed.
 (*****************************************************************************************)
 
 Lemma easy_occ :
-  forall p a, count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0.
+  forall p a, well_formed (a::p) -> count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0.
 Proof.
   induction p.
   trivial.
-  intros.
+  intros a0 wf H.
   case (eq_coord a a0).
   - intro e.
     rewrite e in H.
     simpl in H.
     case (eq_coord a0 a0); intro e2.
-    -- simpl in H. admit.
+    -- 
+       admit.
     -- contradiction.
   - intro e.
 Admitted.
 
-Lemma wf_minus : forall p, well_formed p -> forall c, well_formed (p \ c).
+Lemma arith : forall a, a = 0 -> S a = 1. Proof. lia. Qed.
+
+Lemma list_aux2 :
+  forall (a a0 : coord) p, a <> a0 -> In a0 (a :: p) -> In a0 p.
+Proof.
+  intros a a0 p.
+  revert a a0.
+  induction p; intros; simpl.
+  - elim H.
+    unfold In in H0.
+    destruct H0.
+    assumption.
+    exfalso.
+    assumption.
+  - unfold In in H0.
+    destruct H0.
+    + contradiction.
+    + destruct H0.
+      * left. assumption.
+      * right. assumption.
+Qed.
+
+Lemma list_aux3 :
+  forall (a a0 : coord) p, In a0 p -> a <> a0 -> In a0 (a :: p).
+Proof.
+  intros a a0 p.
+  revert a a0.
+  induction p; intros; simpl.
+  - destruct H.
+  - right.
+    destruct H.
+    + left. assumption.
+    + right. assumption.
+Qed.
+
+Lemma list_aux : forall p a c, ~ In a p -> ~ In a (p\c).
+Proof.
+  induction p; simpl; trivial.
+  intros a0 c H1 H2.
+  elim H1.
+  case (eq_coord a a0).
+  - intro. left. trivial.
+  - intro. right.
+    case (eq_coord c a); intro.
+    + rewrite e in H2. rewrite eq_rw in H2.
+      set (pp := List.in_remove eq_coord p a0 a).
+      destruct pp; assumption.
+    + rewrite eq_rw2 in H2.
+      apply (list_aux2 a a0 p); try assumption.
+      * apply list_aux2 in H2.
+        ** apply in_remove in H2.
+           destruct H2.
+           apply list_aux3; assumption.
+        ** assumption.
+      * assumption.
+Qed.
+
+Lemma occ_arith: forall p a c,
+   c <> a -> count_occ eq_coord p a = 0 -> S (count_occ eq_coord (p\c) a) = 1.
+Proof.
+  intros p a c H1 H2.
+  apply arith.
+  apply count_occ_not_In in H2.
+  apply count_occ_not_In.
+  apply list_aux.
+  assumption.
+Qed.
+
+Lemma wf_minus :
+  forall p, well_formed p -> forall c, well_formed (p \ c).
 Proof.
   induction p.
-  - simpl. trivial.
-  - intros wf c.
+  { simpl. trivial. }
+  { intros wf c.
     case (eq_coord a c); intro eq.
     + rewrite eq.
       simpl.
@@ -404,32 +493,23 @@ Proof.
       * contradiction.
     + simpl.
       case (eq_coord c a); intro eq2.
-      -- congruence.
-      -- unfold well_formed.
+      - congruence.
+      - unfold well_formed.
          split.
          ++ simpl.
             case (eq_coord a a); intro eq3.
-            ** unfold well_formed in wf.
+            ** assert (wfcp := wf).
+               unfold well_formed in wf.
                destruct wf.
                eapply easy_occ in H.
-               admit.
-               (* assumption. *)
+               apply occ_arith; assumption.
+               assumption.
             ** contradiction.
-
          ++ apply IHp.
           unfold well_formed in wf.
           destruct wf.
-          assumption.
-Admitted.
-
-Lemma wf_minus_d :
-  forall p, well_formed p -> forall d, well_formed (pose_domino d p).
-Admitted.
-
-Lemma wf_minus_dl :
-  forall p, well_formed p -> forall dl, well_formed (pose_dominos dl p).
-Admitted.
-
+          assumption. }
+Qed.
 
 Lemma wf_minus_hd :
   forall p a, well_formed (a :: p) -> well_formed p.
@@ -442,6 +522,113 @@ Proof.
     unfold well_formed in wf.
     destruct wf as (h1, (h2, h3)).
     split; assumption.
+Qed.
+
+Lemma rw10 : forall x p, (x :: p) \ x = p \ x.
+Proof.
+  intros x p.
+  revert x.
+  induction p; intro x0; simpl;
+  rewrite eq_rw; reflexivity.
+Qed.
+
+Lemma rw11 : forall x y p, x <> y -> (y :: p) \ x = y :: (p \ x).
+Proof.
+  intros x y p neq.
+  revert x y neq.
+  induction p; intros x0 y0 neq; simpl;
+  case (eq_coord x0 y0); trivial; congruence.
+Qed.
+
+Print List.
+
+Lemma wf_minus_d :
+  forall p, well_formed p -> forall d, well_formed (pose_domino d p).
+Proof.
+  induction p.
+  + split.
+  + intros wfap d.
+    assert (wfap' := wfap).
+    destruct d; unfold pose_domino; simpl.
+    - case (eq_coord c a); intro e.
+      * apply (wf_minus_hd p a) in wfap.
+        set (pp := IHp wfap (Hauteur c)).
+        unfold pose_domino in pp.
+        simpl in pp.
+        assumption.
+      * apply (wf_minus_hd p a) in wfap.
+        set (pp := IHp wfap (Hauteur c)).
+        unfold pose_domino in pp.
+        simpl in pp.
+        case (eq_coord (dessous c) a); intro e2.
+        ++ rewrite <- e2.
+           rewrite rw10.
+           assumption.
+
+        ++ rewrite rw11; try assumption.
+           set (t := wf_minus (p) wfap c).
+           set (t' := wf_minus (p\c) t (dessous c)).
+           simpl.
+           rewrite <- rw10.
+           rewrite eq_rw.
+           split.
+           -- apply occ_arith.
+              assumption.
+              rewrite List.count_occ_cons_neq; try assumption.
+              simpl in t.
+              unfold well_formed in t.
+              admit.
+           -- rewrite rw10. assumption.
+    - case (eq_coord c a); intro e.
+      * apply (wf_minus_hd p a) in wfap.
+        set (pp := IHp wfap (Largeur c)).
+        unfold pose_domino in pp.
+        simpl in pp.
+        assumption.
+      * apply (wf_minus_hd p a) in wfap.
+        set (pp := IHp wfap (Largeur c)).
+        unfold pose_domino in pp.
+        simpl in pp.
+        case (eq_coord (droite c) a); intro e2.
+        ++ rewrite <- e2.
+           rewrite rw10.
+           assumption.
+        ++ rewrite rw11; try assumption.
+           set (t := wf_minus (p) wfap c).
+           set (t' := wf_minus (p\c) t (droite c)).
+           simpl.
+           rewrite <- rw10.
+           rewrite eq_rw.
+           split.
+           -- apply occ_arith.
+              assumption.
+              rewrite List.count_occ_cons_neq; try assumption.
+              admit.
+           -- rewrite rw10. assumption.
+Admitted.
+
+Lemma rw12 : forall dl a p,
+  (fold_left (fun (p0 : plateau) (d : domino) => pose_domino d p0) dl
+     (pose_domino a p)) = pose_dominos dl (pose_domino a p).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma wf_minus_dl :
+  forall p, well_formed p -> forall dl, well_formed (pose_dominos dl p).
+Proof.
+  unfold pose_dominos.
+  intros p wfp dl.
+  revert p wfp.
+  induction dl; trivial.
+  intros p wfp.
+  set (wfpdl := IHdl p wfp).
+  unfold well_formed.
+  simpl.
+  rewrite rw12.
+  apply (IHdl (pose_domino a p)).
+  eapply wf_minus_d.
+  assumption.
 Qed.
 
 (*****************************************************************************************)
@@ -746,15 +933,6 @@ Proof.
       congruence.
 Qed.
 
-Lemma eq_rw {P}: forall a (x y : P), (if eq_coord a a then x else y) = x.
-Proof.
-  intros.
-  case (eq_coord a a).
-  intros.
-  trivial.
-  contradiction.
-Qed.
-
 (** si on retire une case de la couleur que l'on compte, alors on en a une de moins *)
 Lemma retire_case (col : couleur) (a : coord) (p: plateau) :
   well_formed p ->
@@ -1044,7 +1222,7 @@ Qed.
 
 (** comme [c] <> [droite c],
     si [droite c] est dans [p] alors [droite c] est dans [p \ c]*)
-Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (p\c).
+Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (p \ c).
 Proof.
   intro.
   apply List.in_in_remove.
@@ -1057,7 +1235,7 @@ Qed.
 
 (** comme [c] <> [dessous c],
     si [dessous c] est dans [p] alors [dessous c] est dans [p \ c]*)
-Lemma in_simp c p : In (dessous c) p -> In (dessous c) (p\c).
+Lemma in_simp c p : In (dessous c) p -> In (dessous c) (p \ c).
 Proof.
   intro.
   apply List.in_in_remove.
