@@ -619,7 +619,17 @@ Proof.
 Admitted.
 
 Lemma rw_wf_in : forall p a, well_formed (a :: p) -> p \ a = p.
-Admitted.
+Proof.
+  induction p.
+  - simpl; trivial.
+  - intros a0 wf.
+    destruct wf.
+    rewrite count_occ_cons_eq in H; trivial.
+    apply arith in H.
+    apply count_occ_not_In in H.
+    apply notin_remove.
+    assumption.
+Qed.
 
 Lemma sub_cor : forall p d, well_formed p -> sublist (p \ d) p /\ sublist p (d::p).
 Proof.
