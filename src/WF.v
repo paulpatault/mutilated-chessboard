@@ -218,15 +218,21 @@ Qed.
 
 Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
 Proof.
-  (* induction p.
+  induction p.
   - simpl. trivial.
-  - intros. *)
+  - intros.
+    set (xx := IHp p' a0).
+    destruct H.
 Admitted.
 
 Lemma sub_empty : forall b, sublist b [] -> b = [].
 Proof.
   induction b.
-Admitted.
+  - trivial.
+  - intros.
+    destruct H.
+    destruct H.
+Qed.
 
 Lemma sub_in_trans: forall a b c, In a b -> sublist b c -> In a c.
 Proof.
