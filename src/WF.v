@@ -14,11 +14,13 @@ Fixpoint well_formed (p : plateau) :=
 (*****************************************************************************************)
 
 Lemma easy_occ :
-  forall p a, well_formed (a::p) -> count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0.
+  (* forall p a, well_formed (a::p) -> count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0. *)
+  forall p a, well_formed (a::p) -> count_occ eq_coord p a = 0.
 Proof.
   induction p.
   trivial.
-  intros a0 wf H.
+  intros a0 H.
+  (* intros a0 wf H. *)
   case (eq_coord a a0).
   - intro e.
     rewrite e in H.
@@ -26,7 +28,8 @@ Proof.
     case (eq_coord a0 a0); intro e2.
     -- rewrite eq_rw in H.
        rewrite eq_rw in H.
-       apply arith in H.
+       Admitted.
+       (* apply arith in H.
        discriminate.
     -- contradiction.
   - intro e.
@@ -40,7 +43,7 @@ Proof.
     apply count_occ_not_In in H0.
     apply not_in_cons.
     auto.
-Qed.
+Qed. *)
 
 Lemma list_aux2 :
   forall (a a0 : coord) p, a <> a0 -> In a0 (a :: p) -> In a0 p.
@@ -134,9 +137,12 @@ Proof.
             ** assert (wfcp := wf).
                unfold well_formed in wf.
                destruct wf.
+               set (xx := easy_occ p a wfcp).
+               apply occ_arith; assumption.
+               (* apply arith.
                eapply easy_occ in H.
                apply occ_arith; assumption.
-               assumption.
+               assumption. *)
             ** contradiction.
          ++ apply IHp.
           unfold well_formed in wf.
@@ -156,19 +162,6 @@ Proof.
     destruct wf as (h1, (h2, h3)).
     split; assumption.
 Qed.
-
-(* Lemma wf_minus_hd2 :
-  forall p a, ~ In a p -> well_formed (a :: (p\a)) -> well_formed p.
-Proof.
-  induction p.
-  + simpl.
-    split.
-  + intros a0 nin wf.
-    unfold well_formed.
-    unfold well_formed in wf.
-    destruct wf.
-    split.
-Qed. *)
 
 Lemma rw10 : forall x p, (x :: p) \ x = p \ x.
 Proof.
@@ -239,6 +232,9 @@ Proof.
   - intros. *)
 Admitted.
 
+Lemma sub_in_trans: forall a b c, In a b -> sublist b c -> In a c.
+Proof.
+Admitted.
 
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
 Proof.
@@ -251,14 +247,22 @@ Proof.
     - intro.
       cut (In a b -> sublist b c -> In a c).
       -- intros. apply H2. apply H1. assumption. assumption.
-      -- intros. admit.
-    - intros. admit.
-    - apply (IHa (b\a) (c\a)).
-      + apply (wf_minus_hd a0 a wf).
-      + admit.
-      + apply sub_rm. assumption.
+      -- intros.
+         apply (sub_in_trans a b c H2 H3).
+    - intros.
+      assert (In a (a::a0)).
+      + apply in_eq.
+      + apply (sub_in_trans a (a::a0) b H2 H).
+
+    - set (H1 := easy_occ a0 a wf).
+      apply count_occ_not_In in H1.
+      destruct H as (H, H').
+      set (xx := IHa (b\a) (c\a) (wf_minus_hd a0 a wf)).
+      apply (IHa (b\a) (c\a) (wf_minus_hd a0 a wf) H').
+      apply (sub_rm b c a).
+      assumption.
   }
-Admitted.
+Qed.
 
 Lemma rw_wf_in : forall p a, well_formed (a :: p) -> p \ a = p.
 Proof.
