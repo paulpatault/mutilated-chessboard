@@ -1,6 +1,8 @@
-.aux
-.vo
-.vos
-.vox
-.glob
+*.aux
+*.vo
+*.vos
+*.vok
+*.d
+*.glob
 .lia.cache
+_CoqProject

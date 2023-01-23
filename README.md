@@ -3,14 +3,19 @@
 Projet du cours de preuves Coq ([lien](https://master.math.univ-paris-diderot.fr/modules/m2lmfi-preuveform/))
 du master [LMFI](https://master.math.univ-paris-diderot.fr/annee/m2-lmfi/).
 
+### Compilation
+```
+$ make _CoqProject
+$ make -j4
+```
 ### Problème
 
-Résoudre le problème de pavage avec des dominos `2x1` d'un échiquier `8x8` amputé de deux coins opposés.
-Le problème est insoluble, le fichier Coq en donne une preuve.
+Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés.
+Non ! Le problème est insoluble, le fichier Coq en donne une preuve.
 
 ### Formalisation
 
-L'échiquer est représenté par un ensemble de cases :
+L'échiquer est représenté par une liste de cases :
 - les cases sont des records contenant deux entiers `x` et `y` : coordonnées de la case.
 - l'ensemble est représenté par une liste sur laquelle on fait l'hypothèse que chaque élément qui s'y trouve est unique.
 - les dominos seront posés soit en `Hauteur` soit en `Largeur` à partir d'une case donnée par ses coordonnées.
@@ -99,4 +104,3 @@ L'échiquer est représenté par un ensemble de cases :
 - expliquer les notations
 - finir la preuve : il reste encore 3 `admit`
 - ajouter une notation `pose_domino d p = "d / p"` : `d` écrase `p` ?
-
