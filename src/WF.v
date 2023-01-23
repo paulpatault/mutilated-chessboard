@@ -95,7 +95,7 @@ Proof.
       * assumption.
 Qed.
 
-Lemma occ_arith: forall p a c,
+Lemma occ_arith : forall p a c,
    c <> a -> count_occ eq_coord p a = 0 -> S (count_occ eq_coord (p\c) a) = 1.
 Proof.
   intros p a c H1 H2.
@@ -219,7 +219,7 @@ Qed.
 Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
 Proof.
   induction p.
-  - simpl. trivial.
+   - simpl. trivial.
   - intros.
     set (xx := IHp p' a0).
     destruct H.
@@ -239,11 +239,31 @@ Proof.
   intros a b c.
   revert a b.
   induction c.
-  { intros.
+  { intros a b H H0.
     apply sub_empty in H0.
     rewrite H0 in H.
     assumption. }
-  (* {  } *)
+  { intros a0 b H H0.
+    case (eq_coord a a0); intro eq.
+    - rewrite eq.
+      apply in_eq.
+    - apply in_cons. 
+      cut (In a0 (a :: c)).
+      + intro.
+        apply List.in_inv in H1.
+        destruct H1.
+        * contradiction.
+        * assumption.
+      + admit.
+        (* test induction *)
+        (* destruct b.
+        destruct H.
+        simpl in H0.
+        destruct H0 as ([H0 | H01], H2).
+        * rewrite H0 in H2.
+          rewrite eq_rw in H2. *)
+        (* bof ? *)
+  }
 Admitted.
 
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
