@@ -512,7 +512,12 @@ Proof.
     unfold case_noire in H1;
     unfold couleur_case in H2;
     rewrite H.
-  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (dessous c) (p\c)).
+  { assert (H2_cpy := H2 ); trivial.
+    apply H0 in H2_cpy.
+    unfold pose_domino.
+    simpl.
+    symmetry.
+    rewrite  (retire_case_neg1 (dessous c) (p\c)).
     apply (retire_case Blanc c p wfp).
     - trivial.
     - destruct (Domino.rm_iff_mem p p' (Hauteur c)); trivial.
@@ -527,7 +532,11 @@ Proof.
     symmetry.
     apply (retire_case Blanc (dessous c) p wfp); simpl; trivial.
     destruct (Domino.rm_iff_mem p p' (Hauteur c)); trivial. }
-  { apply_lemmas (Nat.Even (x c + y c)) H0 (retire_case_neg1 (droite c) (p\c)).
+  { assert (H2_cpy := H2); trivial;
+    apply H0 in H2_cpy;
+    unfold pose_domino;
+    simpl;
+    symmetry; rewrite (retire_case_neg1 (droite c) (p\c)).
     apply (retire_case Blanc c p wfp); simpl; trivial.
     apply (Domino.rm_iff_mem p p' (Largeur c)); trivial. trivial. }
   { clear H0.

@@ -10,7 +10,7 @@ $ make -j4
 ```
 ### Problème
 
-Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés.
+Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés ?
 Non ! Le problème est insoluble, le fichier Coq en donne une preuve.
 
 ### Formalisation
