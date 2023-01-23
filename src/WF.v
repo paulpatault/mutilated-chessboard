@@ -176,56 +176,6 @@ Fixpoint sublist (pp p : plateau) :=
   | h::t => In h p /\ sublist t (p\h)
   end.
 
-Lemma wf_minus_ll :
-  forall p pp, well_formed p -> sublist pp p -> well_formed pp.
-Proof.
-  intros p pp.
-  revert p.
-  induction pp.
-  - intros. auto.
-  - intros.
-    destruct H0 as (H01, H02).
-    set (HH := IHpp (p\a) (wf_minus p H a) H02).
-    cut (~ In a pp).
-    + intro H2.
-      split.
-      * rewrite count_occ_cons_eq.
-        -- apply arith.
-           apply count_occ_not_In.
-           assumption.
-        -- reflexivity.
-      * assumption.
-    + (* from H02 *)
-Admitted.
-
-Lemma sub_refl : forall a, well_formed a -> sublist a a.
-Proof.
-  induction a.
-  - simpl. trivial.
-  - simpl.
-    split.
-    + left; reflexivity.
-    + rewrite eq_rw.
-      rewrite eq_rw in H.
-      destruct H.
-      apply arith in H.
-      apply count_occ_not_In in H.
-      rewrite notin_remove.
-      apply IHa.
-      assumption.
-      assumption.
-Qed.
-
-Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
-Proof.
-  induction p.
-  - simpl. trivial.
-  - intros.
-    set (xx := IHp p' a0).
-    destruct H.
-
-Admitted.
-
 Lemma sub_empty : forall b, sublist b [] -> b = [].
 Proof.
   induction b.
@@ -265,6 +215,63 @@ Proof.
           rewrite eq_rw in H2. *)
         (* bof ? *)
   }
+Admitted.
+
+Lemma sub_notin_contra : forall pp p a, sublist pp p -> ~ In a p -> ~ In a pp.
+Proof.
+  intros pp p a H1 H2 H3.
+  apply H2.
+  apply (sub_in_trans a pp p); assumption.
+Qed.
+
+Lemma wf_minus_ll :
+  forall p pp, well_formed p -> sublist pp p -> well_formed pp.
+Proof.
+  intros p pp.
+  revert p.
+  induction pp.
+  - intros. auto.
+  - intros.
+    destruct H0 as (H01, H02).
+    set (HH := IHpp (p\a) (wf_minus p H a) H02).
+    cut (~ In a pp).
+    + intro H2.
+      split.
+      * rewrite count_occ_cons_eq.
+        -- apply arith.
+           apply count_occ_not_In.
+           assumption.
+        -- reflexivity.
+      * assumption.
+    + apply (sub_notin_contra pp (p\a) a H02).
+      apply remove_In.
+Qed.
+
+Lemma sub_refl : forall a, well_formed a -> sublist a a.
+Proof.
+  induction a.
+  - simpl. trivial.
+  - simpl.
+    split.
+    + left; reflexivity.
+    + rewrite eq_rw.
+      rewrite eq_rw in H.
+      destruct H.
+      apply arith in H.
+      apply count_occ_not_In in H.
+      rewrite notin_remove.
+      apply IHa.
+      assumption.
+      assumption.
+Qed.
+
+Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
+Proof.
+  induction p.
+  - simpl. trivial.
+  - intros.
+    set (xx := IHp p' a0).
+    destruct H.
 Admitted.
 
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
