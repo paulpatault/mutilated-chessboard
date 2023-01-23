@@ -4,7 +4,7 @@ Projet du cours de preuves Coq ([lien](https://master.math.univ-paris-diderot.fr
 du master [LMFI](https://master.math.univ-paris-diderot.fr/annee/m2-lmfi/).
 
 ### Compilation
-```
+```bash
 $ make _CoqProject
 $ make -j4
 ```

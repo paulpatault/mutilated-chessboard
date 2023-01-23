@@ -1,3 +1,0 @@
-- [Set lib](https://coq.inria.fr/library/Coq.Lists.ListSet.html#empty_set)
-- [set question](https://coq-club.inria.narkive.com/sMV8Ps1Z/finite-sets-in-proofs)
-- [ensemble](https://coq.inria.fr/library/Coq.Sets.Ensembles.html#Ensemble)

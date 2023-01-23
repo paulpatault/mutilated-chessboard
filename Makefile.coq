@@ -15,6 +15,8 @@ SHELL := /usr/bin/env bash
 # COQFLAGS   (default: empty) (passed to coqc and coqide, not coqdep)
 # COQINCLUDE (default: empty)
 # V          (default: *.v)
+PWD := $(shell pwd)
+V := $(wildcard $(PWD)/src/*.v)
 # V_AUX      (default: undefined/empty)
 # SERIOUS    (default: 1)
 #            (if 0, we produce .vio files)
