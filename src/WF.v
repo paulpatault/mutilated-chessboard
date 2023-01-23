@@ -134,10 +134,6 @@ Proof.
                destruct wf.
                set (xx := easy_occ p a wfcp).
                apply occ_arith; assumption.
-               (* apply arith.
-               eapply easy_occ in H.
-               apply occ_arith; assumption.
-               assumption. *)
             ** contradiction.
          ++ apply IHp.
           unfold well_formed in wf.
