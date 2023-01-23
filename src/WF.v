@@ -219,10 +219,11 @@ Qed.
 Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
 Proof.
   induction p.
-   - simpl. trivial.
+  - simpl. trivial.
   - intros.
     set (xx := IHp p' a0).
     destruct H.
+
 Admitted.
 
 Lemma sub_empty : forall b, sublist b [] -> b = [].
