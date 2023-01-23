@@ -14,36 +14,31 @@ Fixpoint well_formed (p : plateau) :=
 (*****************************************************************************************)
 
 Lemma easy_occ :
-  (* forall p a, well_formed (a::p) -> count_occ eq_coord (a :: p) a = 1 -> count_occ eq_coord p a = 0. *)
   forall p a, well_formed (a::p) -> count_occ eq_coord p a = 0.
 Proof.
   induction p.
   trivial.
   intros a0 H.
-  (* intros a0 wf H. *)
   case (eq_coord a a0).
-  - intro e.
+  { intro e.
     rewrite e in H.
     simpl in H.
     case (eq_coord a0 a0); intro e2.
-    -- rewrite eq_rw in H.
+    - rewrite eq_rw in H.
        rewrite eq_rw in H.
-       Admitted.
-       (* apply arith in H.
+       destruct H.
+       apply arith in H.
        discriminate.
-    -- contradiction.
-  - intro e.
-    unfold well_formed in wf.
-    destruct wf.
+    - contradiction. }
+  { intro e.
     apply count_occ_not_In.
-    simpl in H0.
-    rewrite eq_rw in H0.
-    apply arith in H0.
-    rewrite eq_rw2 in H0; try assumption.
-    apply count_occ_not_In in H0.
-    apply not_in_cons.
-    auto.
-Qed. *)
+    destruct H.
+    rewrite count_occ_cons_eq in H.
+    apply arith in H.
+    apply count_occ_not_In in H.
+    - assumption.
+    - auto. }
+Qed.
 
 Lemma list_aux2 :
   forall (a a0 : coord) p, a <> a0 -> In a0 (a :: p) -> In a0 p.
