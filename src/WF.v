@@ -200,10 +200,19 @@ Proof.
   induction pp.
   - intros. auto.
   - intros.
-    unfold sublist in H0.
     destruct H0 as (H01, H02).
     set (HH := IHpp (p\a) (wf_minus p H a) H02).
-  Admitted.
+    cut (~ In a pp).
+    + intro H2.
+      split.
+      * rewrite count_occ_cons_eq.
+        -- apply arith.
+           apply count_occ_not_In.
+           assumption.
+        -- reflexivity.
+      * assumption.
+    + (* from H02 *)
+Admitted.
 
 Lemma sub_refl : forall a, well_formed a -> sublist a a.
 Proof.
