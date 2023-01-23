@@ -232,8 +232,21 @@ Proof.
   - intros. *)
 Admitted.
 
+Lemma sub_empty : forall b, sublist b [] -> b = [].
+Proof.
+  induction b.
+Admitted.
+
 Lemma sub_in_trans: forall a b c, In a b -> sublist b c -> In a c.
 Proof.
+  intros a b c.
+  revert a b.
+  induction c.
+  { intros.
+    apply sub_empty in H0.
+    rewrite H0 in H.
+    assumption. }
+  (* {  } *)
 Admitted.
 
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
