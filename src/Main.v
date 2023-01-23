@@ -27,7 +27,7 @@ Definition sol_base :=
 
 (** la solution fonctionne bien
     → pas mal de calcul ici (8 secondes sur ma machine) *)
-(* Theorem classic_board_resoluble : resoluble plateau_base.
+Theorem classic_board_resoluble : resoluble plateau_base.
 Proof.
   unfold resoluble.
   split.
@@ -41,7 +41,7 @@ Proof.
       simpl.
       trivial.
     - simpl. intuition; discriminate H. }
-Qed. *)
+Qed.
 
 (*****************************************************************************************)
 (********************************* { Mutilated Board  } **********************************)

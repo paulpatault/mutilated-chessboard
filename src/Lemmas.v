@@ -2,7 +2,7 @@ Require Import Domino Disjoint Resoluble WF.
 Require Import Arith Nat List Lia.
 Import ListNotations.
 
-Create HintDb lemmas.
+Create HintDb lemmas_hints.
 
 (*****************************************************************************************)
 (************************************ { Lemmes}  *****************************************)
@@ -390,7 +390,8 @@ Proof.
   }
 Qed.
 
-Hint Resolve retire_case.
+#[global]
+Hint Resolve retire_case : lemmas_hints.
 
 (** si on retire une case de la couleur que l'on ne compte pas
     alors le compte n'a pas changé *)
@@ -419,7 +420,8 @@ Proof.
   }
 Qed.
 
-Hint Resolve retire_case_neg1.
+#[global]
+Hint Resolve retire_case_neg1 : lemmas_hints.
 
 (** si on retire une case de la couleur que l'on ne compte pas
     alors le compte n'a pas changé *)
@@ -448,7 +450,8 @@ Proof.
   }
 Qed.
 
-Hint Resolve retire_case_neg2.
+#[global]
+Hint Resolve retire_case_neg2 : lemmas_hints.
 
 (** l'opération [remove] est commutative *)
 Lemma remove_comm (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
@@ -636,10 +639,14 @@ Proof.
   - assumption.
 Qed.
 
-Hint Resolve in_simp.
-Hint Resolve in_simp2.
-Hint Resolve in_simp_droite.
-Hint Resolve in_simp2_droite.
+#[global]
+Hint Resolve in_simp : lemmas_hints.
+#[global]
+Hint Resolve in_simp2 : lemmas_hints.
+#[global]
+Hint Resolve in_simp_droite : lemmas_hints.
+#[global]
+Hint Resolve in_simp2_droite : lemmas_hints.
 
 (** raccourci, voir usage *)
 Ltac apply_lemmas_l cp h f :=
@@ -763,7 +770,8 @@ Proof.
   auto.
 Qed.
 
-Hint Resolve remove_comm.
+#[global]
+Hint Resolve remove_comm : lemmas_hints.
 
 (** l'opération pose_domino est commutative *)
 Lemma pose_domino_comm :
@@ -925,7 +933,7 @@ Proof.
   }
   {
     rewrite <- Nat.add_1_r.
-    rewrite (retire_case Blanc); auto.
+    rewrite (retire_case Blanc); auto with lemmas_hints.
     + simpl.
       rewrite (retire_case_neg1 c);
       auto.
@@ -938,11 +946,11 @@ Proof.
     pose (H := dessous_inv_col Blanc c).
     destruct H as (H & HH). clear HH.
     pose (col_d_c := H col_c).
-    assert (couleur_case Noir (dessous c)); auto.
+    assert (couleur_case Noir (dessous c)); auto with lemmas_hints.
     clear col_d_c.
     rewrite <- Nat.add_1_r.
     symmetry.
-    rewrite (retire_case Noir); auto.
+    rewrite (retire_case Noir); auto with lemmas_hints.
     apply (wf_minus p wfp c).
   }
   {
@@ -966,7 +974,7 @@ Proof.
   }
   {
     rewrite <- Nat.add_1_r.
-    rewrite (retire_case Blanc); auto.
+    rewrite (retire_case Blanc); auto with lemmas_hints.
     + simpl.
       rewrite (retire_case_neg1 c);
       auto.
@@ -981,7 +989,7 @@ Proof.
     clear col_d_c.
     rewrite <- Nat.add_1_r.
     symmetry.
-    rewrite (retire_case Noir); auto.
+    rewrite (retire_case Noir); auto with lemmas_hints.
     apply (wf_minus p wfp c).
   }
   {

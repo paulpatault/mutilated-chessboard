@@ -152,9 +152,6 @@ Defined.
 (** notation à la \setminus *)
 Infix "\" := (fun a b => List.remove eq_coord b a) (at level 31, left associativity).
 
-(** Les listes sont un "modèle" pour un ensemble, on peut supposer le lemme suivant : *)
-Hypothesis remove_hd : forall c p, (c :: p) \ c = p.
-
 (** Plateau du problème : échiquier classique sans 1 pair de coins opposés *)
 Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y := 0|}.
 
@@ -172,8 +169,19 @@ Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
 (** hyp : si l'on a un [p'] tq [p' = pose_domino d p]
           alors c'est que les cases prisent par le domino
           étaient présentes dans [p] *)
+
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
-  (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p) .
+  (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p).
+
+Hypothesis rm_iff_mem2 : forall p p' c, p' = p \ c -> In c p.
+(* Proof.
+  intros p p' d.
+  destruct d; unfold pose_domino; simpl; intro.
+  revert p p'.
+  -
+  simpl.
+  intros. *)
+
 
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
 Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.

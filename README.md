@@ -101,6 +101,8 @@ L'échiquer est représenté par une liste de cases :
 
 ### TODO
 
+- retirer les TODO
+- finir le readme
 - expliquer les notations
 - finir la preuve : il reste encore 3 `admit`
 - ajouter une notation `pose_domino d p = "d / p"` : `d` écrase `p` ?

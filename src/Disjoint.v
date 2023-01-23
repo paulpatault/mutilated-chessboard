@@ -1,6 +1,8 @@
 Require Import Domino List.
 Import ListNotations.
 
+Create HintDb disjoints_hints.
+
 Definition disjoints_dominos (d1 d2:domino) :=
   match d1, d2 with
   | Hauteur c1, Hauteur c2 =>
@@ -55,7 +57,8 @@ Proof.
   auto.
 Qed.
 
-Hint Resolve simp_disjlo0.
+#[local]
+Hint Resolve simp_disjlo0 : disjoints_hints.
 
 Lemma simp_disjlo0b : forall d, disjoints_dominos_l d [].
 Proof.
@@ -63,7 +66,8 @@ Proof.
   auto.
 Qed.
 
-Hint Resolve simp_disjlo0b.
+#[local]
+Hint Resolve simp_disjlo0b : disjoints_hints.
 
 Lemma rw_util_disj : forall a d, disjoints_dominos_l d [a] <-> disjoints_dominos d a.
 Proof.
@@ -81,7 +85,8 @@ Proof.
     split; try assumption; trivial.
 Qed.
 
-Hint Resolve simp_disjlo0b.
+#[local]
+Hint Resolve simp_disjlo0b : disjoints_hints.
 
 Lemma simp_disjlo1 :
   forall d dl,
@@ -102,7 +107,8 @@ Proof.
     + assumption.
 Qed.
 
-Hint Resolve simp_disjlo1.
+#[local]
+Hint Resolve simp_disjlo1 : disjoints_hints.
 
 Lemma simp_disjlo2 :
   forall d dl,
@@ -111,7 +117,7 @@ Lemma simp_disjlo2 :
 Proof.
   intros d dl H.
   destruct dl.
-  { auto. }
+  { auto with disjoints_hints. }
   { destruct H.
     split;
     unfold disjoints_dominos_lo_aux in H;
@@ -119,4 +125,5 @@ Proof.
     assumption. }
 Qed.
 
-Hint Resolve simp_disjlo2.
+#[local]
+Hint Resolve simp_disjlo2 : disjoints_hints.
