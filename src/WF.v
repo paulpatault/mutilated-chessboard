@@ -185,6 +185,44 @@ Proof.
     destruct H.
 Qed.
 
+Lemma sublist_cons : forall a b c, sublist a b -> sublist a (c::b).
+Proof.
+  intros a b.
+  revert a.
+  induction b.
+  { intros. apply sub_empty in H. rewrite H. simpl. tauto. }
+  { induction a0.
+    - tauto.
+    - intros c H.
+      split.
+      + right.
+        case (eq_coord a0 a).
+        * intro. left. symmetry. assumption.
+        * intro neq. right.
+          destruct H.
+          destruct H.
+          ++ congruence.
+          ++ assumption.
+      + case (eq_coord a0 c); intro eq1.
+        * admit.
+        * case (eq_coord a0 a); intro eq2.
+          ++
+
+Admitted.
+
+Lemma sublist_rm : forall a b c, sublist a (b\c) -> sublist a b.
+Proof.
+  intros a b.
+  revert a.
+  induction b.
+  { intros. trivial. }
+  { intros a0 c H.
+    (* apply sublist_cons. *)
+    (* apply (IHb a0 c). *)
+  (* } *)
+Admitted.
+
+
 Lemma sub_in_trans: forall a b c, In a b -> sublist b c -> In a c.
 Proof.
   intros a b c.
@@ -205,15 +243,31 @@ Proof.
         destruct H1.
         * contradiction.
         * assumption.
-      + admit.
+      + 
         (* test induction *)
-        (* destruct b.
-        destruct H.
+        induction b. destruct H.
         simpl in H0.
         destruct H0 as ([H0 | H01], H2).
-        * rewrite H0 in H2.
-          rewrite eq_rw in H2. *)
-        (* bof ? *)
+        * apply IHb.
+          -- rewrite <- H0 in H.
+             apply in_inv in H.
+             destruct H.
+             ++ contradiction.
+             ++ assumption.
+          -- rewrite H0 in H2.
+             rewrite eq_rw in H2.
+             apply sublist_rm in H2.
+             apply sublist_cons.
+             assumption.
+        * apply IHb.
+          (* admit. *)
+          -- case (eq_coord a0 a1).
+             ++ intro e. rewrite eq_rw2 in H2.
+                ** admit.
+                ** congruence.
+             ++ admit.
+          -- admit.
+             (* bof ? *)
   }
 Admitted.
 
@@ -270,8 +324,8 @@ Proof.
   induction p.
   - simpl. trivial.
   - intros.
-    set (xx := IHp p' a0).
     destruct H.
+    set (xx := IHp (p'\a) a0 H0).
 Admitted.
 
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
@@ -286,6 +340,17 @@ Proof.
       cut (In a b -> sublist b c -> In a c).
       -- intros. apply H2. apply H1. assumption. assumption.
       -- intros.
+         (* unfold In.
+         destruct c.
+         --- apply sub_empty in H3. rewrite H3 in H2.
+             destruct H2.
+         --- *)
+         (* simpl.
+         refine (fun A => fun a c => or_introl _).
+           match c with
+           | [a] => _
+           | _ => _
+           end). *)
          apply (sub_in_trans a b c H2 H3).
     - intros.
       assert (In a (a::a0)).
