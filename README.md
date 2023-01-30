@@ -10,16 +10,16 @@ $ make -j4
 ```
 ### Problème
 
-Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés ?
-Non ! Le problème est insoluble, le fichier Coq en donne une preuve.
+- Question : Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés ?
+- Réponse : Non c'est impossible !
 
 ### Formalisation
 
 L'échiquer est représenté par une liste de cases :
-- les cases sont des records contenant deux entiers `x` et `y` : coordonnées de la case.
-- l'ensemble est représenté par une liste sur laquelle on fait l'hypothèse que chaque élément qui s'y trouve est unique.
-- les dominos seront posés soit en `Hauteur` soit en `Largeur` à partir d'une case donnée par ses coordonnées.
-- chaque case a une couleur en fonction de la partité de la somme des ses coordonnées. (comme sur un échiquier classique)
+- les cases sont des records contenant deux entiers `x` et `y` : coordonnées de la case
+- l'ensemble est représenté par une liste
+- les dominos seront posés soit en `Hauteur` soit en `Largeur` à partir d'une case donnée par ses coordonnées
+- chaque case a une couleur en fonction de la partité de la somme des ses coordonnées (comme sur un échiquier normal)
 - lorsque l'on pose un domino, on retire de notre ensemble de case les cases prises par le domino :
   (par exemple si l'on avait l'ensemble `[(0,0);(0,1);(0,7);(1,7)]` et que l'on pose le domino `Hauteur(0,0)`, 
    on obtiendrait l'ensemble `[(0,7); (1,7)]`)
@@ -52,7 +52,6 @@ L'échiquer est représenté par une liste de cases :
 
 ### Definitions
 
-
 - `plateau_base` : échiquier 8x8 classique
 - `plateau_coupé` : `plateau_base` duquel on a retiré les cases {0;0} et {7;7} (une paire de coins opposés)
 
@@ -77,6 +76,7 @@ L'échiquer est représenté par une liste de cases :
   ```
 - Notations
   * `l \ e` : on retire `e` de la liste `l`
+  * `d // p` : raccourci pour `pose_domino d p`
   * `d1 # d2` : les dominos `d1` et `d2` couvrent des cases différentes (ils sont « disjoints »)
   * `d ## dl` : signifie `∀ di ∈ dl, d # di`
 
@@ -94,15 +94,13 @@ L'échiquer est représenté par une liste de cases :
   Corollary mutilated_board : ~ resoluble plateau_coupé.
   ```
 
-<!-- ### Ensemble des hypothèses
+- on peut aussi prouver assez simplement qu'un plateau d'échecs classique est résoluble
+  ```coq
+  Theorem classic_board_resoluble : resoluble plateau_base.
+  ```
 
-- hypothèses relative a l'ensemble représenté par une liste
-- on fait aussi l'hypothèse que lorsque l'on pose un domino, celui-ci peut être posé : il ne va pas dans le vide -->
+### Améliorations possibles
 
-### TODO
-
-- retirer les TODO
-- finir le readme
-- expliquer les notations
-- finir la preuve : il reste encore 3 `admit`
-- ajouter une notation `pose_domino d p = "d / p"` : `d` écrase `p` ?
+- finir la preuve dans `./src/WF.v`
+- simplifier le modèle du plateau pour améliorer la preuve : utiliser un bibliothèque d'ensemble de la stdlib
+- simplifier certaines preuves qui sont longues et répétitives (notament dans `./src/Lemmas.v`)
