@@ -3,6 +3,8 @@ Require Import Arith_aux.
 Require Import List.
 Import ListNotations.
 
+(** l'occurence de chaque case est égale à 1
+    <-> éléments de [p] sont uniques *)
 Fixpoint well_formed (p : plateau) :=
   match p with
   | [] => True
@@ -25,10 +27,10 @@ Proof.
     simpl in H.
     case (eq_coord a0 a0); intro e2.
     - rewrite eq_rw in H.
-       rewrite eq_rw in H.
-       destruct H.
-       apply arith in H.
-       discriminate.
+      rewrite eq_rw in H.
+      destruct H.
+      apply arith in H.
+      discriminate.
     - contradiction. }
   { intro e.
     apply count_occ_not_In.
@@ -46,18 +48,16 @@ Proof.
   intros a a0 p.
   revert a a0.
   induction p; intros; simpl.
-  - elim H.
+  { elim H.
     unfold In in H0.
     destruct H0.
     assumption.
     exfalso.
-    assumption.
-  - unfold In in H0.
+    assumption. }
+  { unfold In in H0.
     destruct H0.
     + contradiction.
-    + destruct H0.
-      * left. assumption.
-      * right. assumption.
+    + destruct H0; auto. }
 Qed.
 
 Lemma list_aux3 :
@@ -66,11 +66,9 @@ Proof.
   intros a a0 p.
   revert a a0.
   induction p; intros; simpl.
-  - destruct H.
-  - right.
-    destruct H.
-    + left. assumption.
-    + right. assumption.
+  { destruct H. }
+  { right.
+    destruct H; auto. }
 Qed.
 
 Lemma list_aux : forall p a c, ~ In a p -> ~ In a (p\c).
@@ -79,24 +77,26 @@ Proof.
   intros a0 c H1 H2.
   elim H1.
   case (eq_coord a a0).
-  - intro. left. trivial.
-  - intro. right.
-    case (eq_coord c a); intro.
+  { intro e. left. trivial. }
+  { intro ne. right.
+    case (eq_coord c a); intro e.
     + rewrite e in H2. rewrite eq_rw in H2.
       set (pp := List.in_remove eq_coord p a0 a).
       destruct pp; assumption.
     + rewrite eq_rw2 in H2.
       apply (list_aux2 a a0 p); try assumption.
       * apply list_aux2 in H2.
-        ** apply in_remove in H2.
-           destruct H2.
-           apply list_aux3; assumption.
-        ** assumption.
-      * assumption.
+        - apply in_remove in H2.
+          destruct H2.
+          apply list_aux3; assumption.
+        - assumption.
+      * assumption. }
 Qed.
 
 Lemma occ_arith : forall p a c,
-   c <> a -> count_occ eq_coord p a = 0 -> S (count_occ eq_coord (p\c) a) = 1.
+   c <> a ->
+   count_occ eq_coord p a = 0 ->
+   S (count_occ eq_coord (p\c) a) = 1.
 Proof.
   intros p a c H1 H2.
   apply arith.
@@ -115,30 +115,28 @@ Proof.
     case (eq_coord a c); intro eq.
     + rewrite eq.
       simpl.
-      case (eq_coord c c); intro eq2.
-      * apply IHp.
-        unfold well_formed.
-        unfold well_formed in wf.
-        destruct wf.
-        assumption.
-      * contradiction.
+      case (eq_coord c c); intro eq2; try contradiction.
+      apply IHp.
+      unfold well_formed.
+      unfold well_formed in wf.
+      destruct wf.
+      assumption.
     + simpl.
       case (eq_coord c a); intro eq2.
       - congruence.
       - unfold well_formed.
-         split.
-         ++ simpl.
-            case (eq_coord a a); intro eq3.
-            ** assert (wfcp := wf).
-               unfold well_formed in wf.
-               destruct wf.
-               set (xx := easy_occ p a wfcp).
-               apply occ_arith; assumption.
-            ** contradiction.
-         ++ apply IHp.
-          unfold well_formed in wf.
-          destruct wf.
-          assumption. }
+        split.
+        ++ simpl.
+           case (eq_coord a a); intro eq3; try contradiction.
+           assert (wfcp := wf).
+           unfold well_formed in wf.
+           destruct wf.
+           set (xx := easy_occ p a wfcp).
+           apply occ_arith; assumption.
+        ++ apply IHp.
+           unfold well_formed in wf.
+           destruct wf.
+           assumption. }
 Qed.
 
 Lemma wf_minus_hd :
@@ -151,7 +149,7 @@ Proof.
     unfold well_formed.
     unfold well_formed in wf.
     destruct wf as (h1, (h2, h3)).
-    split; assumption.
+    auto.
 Qed.
 
 Lemma rw10 : forall x p, (x :: p) \ x = p \ x.
@@ -180,95 +178,12 @@ Lemma sub_empty : forall b, sublist b [] -> b = [].
 Proof.
   induction b.
   - trivial.
-  - intros.
+  - intro H.
     destruct H.
     destruct H.
 Qed.
 
-Lemma sublist_cons : forall a b c, sublist a b -> sublist a (c::b).
-Proof.
-  intros a b.
-  revert a.
-  induction b.
-  { intros. apply sub_empty in H. rewrite H. simpl. tauto. }
-  { induction a0.
-    - tauto.
-    - intros c H.
-      split.
-      + right.
-        case (eq_coord a0 a).
-        * intro. left. symmetry. assumption.
-        * intro neq. right.
-          destruct H.
-          destruct H.
-          ++ congruence.
-          ++ assumption.
-      + case (eq_coord a0 c); intro eq1.
-        * admit.
-        * case (eq_coord a0 a); intro eq2.
-          ++
-
-Admitted.
-
-Lemma sublist_rm : forall a b c, sublist a (b\c) -> sublist a b.
-Proof.
-  intros a b.
-  revert a.
-  induction b.
-  { intros. trivial. }
-  { intros a0 c H.
-    (* apply sublist_cons. *)
-    (* apply (IHb a0 c). *)
-  (* } *)
-Admitted.
-
-
 Lemma sub_in_trans: forall a b c, In a b -> sublist b c -> In a c.
-Proof.
-  intros a b c.
-  revert a b.
-  induction c.
-  { intros a b H H0.
-    apply sub_empty in H0.
-    rewrite H0 in H.
-    assumption. }
-  { intros a0 b H H0.
-    case (eq_coord a a0); intro eq.
-    - rewrite eq.
-      apply in_eq.
-    - apply in_cons. 
-      cut (In a0 (a :: c)).
-      + intro.
-        apply List.in_inv in H1.
-        destruct H1.
-        * contradiction.
-        * assumption.
-      + 
-        (* test induction *)
-        induction b. destruct H.
-        simpl in H0.
-        destruct H0 as ([H0 | H01], H2).
-        * apply IHb.
-          -- rewrite <- H0 in H.
-             apply in_inv in H.
-             destruct H.
-             ++ contradiction.
-             ++ assumption.
-          -- rewrite H0 in H2.
-             rewrite eq_rw in H2.
-             apply sublist_rm in H2.
-             apply sublist_cons.
-             assumption.
-        * apply IHb.
-          (* admit. *)
-          -- case (eq_coord a0 a1).
-             ++ intro e. rewrite eq_rw2 in H2.
-                ** admit.
-                ** congruence.
-             ++ admit.
-          -- admit.
-             (* bof ? *)
-  }
 Admitted.
 
 Lemma sub_notin_contra : forall pp p a, sublist pp p -> ~ In a p -> ~ In a pp.
@@ -284,8 +199,8 @@ Proof.
   intros p pp.
   revert p.
   induction pp.
-  - intros. auto.
-  - intros.
+  - auto.
+  - intros p H H0.
     destruct H0 as (H01, H02).
     set (HH := IHpp (p\a) (wf_minus p H a) H02).
     cut (~ In a pp).
@@ -304,7 +219,7 @@ Qed.
 Lemma sub_refl : forall a, well_formed a -> sublist a a.
 Proof.
   induction a.
-  - simpl. trivial.
+  - auto.
   - simpl.
     split.
     + left; reflexivity.
@@ -319,58 +234,14 @@ Proof.
       assumption.
 Qed.
 
-Lemma sub_rm : forall p p' a, sublist p p' -> sublist (p\a) (p'\a).
-Proof.
-  induction p.
-  - simpl. trivial.
-  - intros.
-    destruct H.
-    set (xx := IHp (p'\a) a0 H0).
-Admitted.
-
+(** un des deux lemmes dont je n'ai pas terminé la preuve *)
 Lemma sub_trans : forall a b c, well_formed a -> sublist a b -> sublist b c -> sublist a c.
-Proof.
-  induction a.
-  { intros. trivial. }
-  { intros b c wf H H0.
-    simpl.
-    split.
-    cut (sublist (a :: a0) b -> In a b).
-    - intro.
-      cut (In a b -> sublist b c -> In a c).
-      -- intros. apply H2. apply H1. assumption. assumption.
-      -- intros.
-         (* unfold In.
-         destruct c.
-         --- apply sub_empty in H3. rewrite H3 in H2.
-             destruct H2.
-         --- *)
-         (* simpl.
-         refine (fun A => fun a c => or_introl _).
-           match c with
-           | [a] => _
-           | _ => _
-           end). *)
-         apply (sub_in_trans a b c H2 H3).
-    - intros.
-      assert (In a (a::a0)).
-      + apply in_eq.
-      + apply (sub_in_trans a (a::a0) b H2 H).
-
-    - set (H1 := easy_occ a0 a wf).
-      apply count_occ_not_In in H1.
-      destruct H as (H, H').
-      set (xx := IHa (b\a) (c\a) (wf_minus_hd a0 a wf)).
-      apply (IHa (b\a) (c\a) (wf_minus_hd a0 a wf) H').
-      apply (sub_rm b c a).
-      assumption.
-  }
-Qed.
+Admitted.
 
 Lemma rw_wf_in : forall p a, well_formed (a :: p) -> p \ a = p.
 Proof.
   induction p.
-  - simpl; trivial.
+  - auto.
   - intros a0 wf.
     destruct wf.
     rewrite count_occ_cons_eq in H; trivial.
@@ -383,8 +254,8 @@ Qed.
 Lemma sub_cor : forall p d, well_formed p -> sublist (p \ d) p /\ sublist p (d::p).
 Proof.
   induction p.
-  - simpl. intro. split; trivial.
-  - intros.
+  { auto. }
+  { intros d H.
     destruct (IHp a) as (IH1, IH2).
     apply (wf_minus_hd p a H).
     split.
@@ -398,56 +269,56 @@ Proof.
         rewrite eq_rw2; try assumption.
         unfold sublist.
         split.
-        -- apply in_eq.
-        -- simpl. rewrite eq_rw.
-           rewrite (rw_wf_in p a); try assumption.
-           destruct (IHp d); try apply (wf_minus_hd p a H).
-           assumption.
+        - apply in_eq.
+        - simpl. rewrite eq_rw.
+          rewrite (rw_wf_in p a); try assumption.
+          destruct (IHp d); try apply (wf_minus_hd p a H).
+          assumption.
     * unfold sublist.
       split.
       + simpl; right; left; trivial.
       + simpl.
         case (eq_coord d a); intro eq; rewrite eq_rw.
-        -- rewrite eq. rewrite eq_rw.
+        - rewrite eq. rewrite eq_rw.
            rewrite rw_wf_in.
            simpl.
            apply sub_refl.
-           --- apply (wf_minus_hd p a H).
-           --- assumption.
-        -- rewrite eq_rw2.
+           ++ apply (wf_minus_hd p a H).
+           ++ assumption.
+        - rewrite eq_rw2.
            ++ rewrite rw_wf_in; try assumption.
               set (H3 := IHp d (wf_minus_hd p a H)).
               destruct H3.
               assumption.
-           ++ intro. apply eq. symmetry. assumption.
+           ++ auto. }
 Qed.
 
 Lemma sublemma : forall d p, well_formed p -> sublist (pose_domino d p) p.
 Proof.
   destruct d; intros; unfold pose_domino; simpl.
-  - set (H1 := sub_cor p c).
+  { set (H1 := sub_cor p c).
     destruct H1; try assumption.
     set (H2 := sub_cor (p\c) (dessous c)).
     destruct H2.
     apply (wf_minus p H c).
     set (wfp_c_dc := wf_minus (p\c) (wf_minus p H c) (dessous c)).
-    apply (sub_trans (p\c\dessous c) (p\c) p wfp_c_dc H2 H0).
-  - set (H1 := sub_cor p c).
+    apply (sub_trans (p\c\dessous c) (p\c) p wfp_c_dc H2 H0). }
+  { set (H1 := sub_cor p c).
     destruct H1; try assumption.
     set (H2 := sub_cor (p\c) (droite c)).
     destruct H2.
     apply (wf_minus p H c).
     set (wfp_c_dc := wf_minus (p\c) (wf_minus p H c) (droite c)).
-    apply (sub_trans (p\c\droite c) (p\c) p wfp_c_dc H2 H0).
+    apply (sub_trans (p\c\droite c) (p\c) p wfp_c_dc H2 H0). }
 Qed.
 
 Lemma wf_minus_d :
   forall p, well_formed p -> forall d, well_formed (pose_domino d p).
 Proof.
-  intros.
+  intros p H d.
   cut (sublist (pose_domino d p) p).
-  + apply wf_minus_ll. assumption.
-  + apply sublemma. assumption.
+  + now apply wf_minus_ll.
+  + now apply sublemma.
 Qed.
 
 Lemma rw12 : forall dl a p,

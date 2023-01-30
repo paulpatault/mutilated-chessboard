@@ -73,7 +73,7 @@ L'échiquer est représenté par une liste de cases :
   ```coq
   Definition resoluble (p : plateau) :=
     well_formed p /\
-    exists dl : list domino, solution p dl /\ disjoints_dominos_lo dl.
+    exists dl : list domino, solution p dl /\ disjoints_dominos dl.
   ```
 - Notations
   * `l \ e` : on retire `e` de la liste `l`

@@ -16,4 +16,4 @@ Definition solution (p : plateau) (dl : list domino) :=
     telle que lorsque les domino seront posés le plateau sera vide *)
 Definition resoluble (p : plateau) :=
   well_formed p /\
-  exists dl : list domino, solution p dl /\ disjoints_dominos_lo dl.
+  exists dl : list domino, solution p dl /\ disjoints_dominos dl.

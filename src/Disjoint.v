@@ -3,7 +3,8 @@ Import ListNotations.
 
 Create HintDb disjoints_hints.
 
-Definition disjoints_dominos (d1 d2:domino) :=
+(** des dominos sont « disjoints » s'ils ne recouvrent pas de case en commun *)
+Definition disjoints2_dominos (d1 d2:domino) :=
   match d1, d2 with
   | Hauteur c1, Hauteur c2 =>
               c1 <> c2 /\
@@ -23,13 +24,13 @@ Definition disjoints_dominos (d1 d2:domino) :=
       dessous c1 <> droite c2
   end.
 
-Infix "#" := (fun a b => disjoints_dominos a b) (at level 32, left associativity).
+Infix "#" := (fun a b => disjoints2_dominos a b) (at level 32, left associativity).
 
 (** déduction de la commutativité de [pose_domino] *)
 Fixpoint disjoints_dominos_l (d : domino) (dl : list domino) :=
   match dl with
   | [] => True
-  | h :: t => disjoints_dominos d h /\ disjoints_dominos_l d t
+  | h :: t => disjoints2_dominos d h /\ disjoints_dominos_l d t
   end.
 
 Infix "##" := (fun a b => disjoints_dominos_l a b) (at level 33, left associativity).
@@ -40,19 +41,19 @@ Fixpoint disjoints_dominos_lo_aux (d : domino) (dl : list domino) :=
   | h::t => (d # h /\ disjoints_dominos_lo_aux d t)
   end.
 
-Fixpoint disjoints_dominos_lo (dl : list domino) :=
+Fixpoint disjoints_dominos (dl : list domino) :=
   match dl with
   | [] => True
-  | h::t => disjoints_dominos_lo_aux h t /\ disjoints_dominos_lo t
+  | h::t => disjoints_dominos_lo_aux h t /\ disjoints_dominos t
   end.
 
 (*****************************************************************************************)
 (****************************** { Lemmes sur "disjoints" } *******************************)
 (*****************************************************************************************)
 
-Lemma simp_disjlo0 : disjoints_dominos_lo [].
+Lemma simp_disjlo0 : disjoints_dominos [].
 Proof.
-  unfold disjoints_dominos_lo.
+  unfold disjoints_dominos.
   simpl.
   auto.
 Qed.
@@ -60,7 +61,7 @@ Qed.
 #[local]
 Hint Resolve simp_disjlo0 : disjoints_hints.
 
-Lemma simp_disjlo0b : forall d, disjoints_dominos_l d [].
+Lemma simp_disjlo0b : forall d, d ## [].
 Proof.
   simpl.
   auto.
@@ -69,20 +70,20 @@ Qed.
 #[local]
 Hint Resolve simp_disjlo0b : disjoints_hints.
 
-Lemma rw_util_disj : forall a d, disjoints_dominos_l d [a] <-> disjoints_dominos d a.
+Lemma rw_util_disj : forall a d, d ## [a] <-> d # a.
 Proof.
   split.
   - intros H.
     case d, a;
-    unfold disjoints_dominos_l, disjoints_dominos in *;
     split;
-    try (destruct H;
+    try
+     (destruct H;
       destruct H;
       assumption).
   - intros H.
     case d, a;
-    unfold disjoints_dominos_l, disjoints_dominos in *;
-    split; try assumption; trivial.
+    cbv;
+    auto.
 Qed.
 
 #[local]
@@ -90,21 +91,19 @@ Hint Resolve simp_disjlo0b : disjoints_hints.
 
 Lemma simp_disjlo1 :
   forall d dl,
-  disjoints_dominos_lo (d :: dl) ->
-  disjoints_dominos_lo dl.
+  disjoints_dominos (d :: dl) ->
+  disjoints_dominos dl.
 Proof.
   intros d dl.
   revert d.
   induction dl.
   - intros. apply simp_disjlo0.
   - intros d H.
-    unfold disjoints_dominos_lo in H.
-    unfold disjoints_dominos_lo.
+    unfold disjoints_dominos in H.
+    unfold disjoints_dominos.
     destruct H.
     destruct H0.
-    split.
-    + assumption.
-    + assumption.
+    split; assumption.
 Qed.
 
 #[local]
@@ -112,8 +111,8 @@ Hint Resolve simp_disjlo1 : disjoints_hints.
 
 Lemma simp_disjlo2 :
   forall d dl,
-  disjoints_dominos_lo (d :: dl) ->
-  disjoints_dominos_l d dl.
+  disjoints_dominos (d :: dl) ->
+  d ## dl.
 Proof.
   intros d dl H.
   destruct dl.

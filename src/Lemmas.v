@@ -78,7 +78,7 @@ Lemma domino_bicolor (d : domino) :
   (case_blanche (fst (case_prise d)) -> case_noire   (snd (case_prise d))) /\
   (case_noire   (fst (case_prise d)) -> case_blanche (snd (case_prise d))).
 Proof.
-  split; destruct d; unfold case_prise; simpl; intro.
+  split; destruct d; unfold case_prise; simpl; intro H.
   - eapply (dessous_inv_col Blanc).
     unfold couleur_case.
     unfold case_blanche in H.
@@ -100,7 +100,7 @@ Qed.
 (** la couleur d'une case est [Blanc] ou [Noir] *)
 Lemma bl_or_no : forall c: coord, couleur_case Blanc c \/ couleur_case Noir c.
 Proof.
-  intro.
+  intro c.
   eapply Nat.Even_or_Odd.
 Qed.
 
@@ -120,7 +120,7 @@ Qed.
 Lemma even_to_not_odd (n:nat) : Nat.even n = true -> Nat.odd n = false.
 Proof.
   rewrite <- Nat.negb_odd.
-  intro.
+  intro H.
   rewrite Bool.negb_true_iff in H.
   assumption.
 Qed.
@@ -130,10 +130,10 @@ Lemma odd_to_not_even (n:nat) : Nat.odd n = true <-> Nat.even n = false.
 Proof.
   split.
   - rewrite <- Nat.negb_odd.
-    intro.
+    intro H.
     rewrite Bool.negb_false_iff.
     assumption.
-  - intro.
+  - intro H.
     unfold Nat.odd .
     rewrite Bool.negb_true_iff.
     assumption.
@@ -163,44 +163,38 @@ Ltac casse_if col h :=
 Lemma rw_util col (a c : coord) (p : plateau) :
   a <> c -> card col (a :: (p \ c)) = card col ((a :: p) \ c).
 Proof.
-  intro.
+  intro H.
   induction p.
   (* HR *)
-  { case col; simpl; case (bl_or_no a).
-    - intro.
-      casse_if Blanc H0.
+  { case col; simpl; case (bl_or_no a); intro H0.
+    - casse_if Blanc H0.
       case (eq_coord c a).
-      + intro. symmetry in e. contradiction.
-      + intro. simpl. rewrite H0. trivial.
-    - intro.
-      casse_if Noir H0.
+      + intro e. symmetry in e. contradiction.
+      + intro e. simpl. rewrite H0. trivial.
+    - casse_if Noir H0.
       apply odd_to_not_even in H0.
       rewrite H0.
       case (eq_coord c a).
-      + intro. symmetry in e. contradiction.
-      + intro. simpl. casse_if Noir H0.
-    - intro.
-      casse_if Blanc H0.
+      + intro e. symmetry in e. contradiction.
+      + intro e. simpl. casse_if Noir H0.
+    - casse_if Blanc H0.
       apply even_to_not_odd in H0.
       rewrite H0.
       case (eq_coord c a); intro; trivial.
       + simpl. rewrite H0. trivial.
-    - intro.
-      casse_if Noir H0.
+    - casse_if Noir H0.
       case (eq_coord c a); intro; trivial.
       + symmetry in e. contradiction.
       + simpl. rewrite H0. trivial.
   }
   (* Heredite *)
   {
-    case col; simpl; case (bl_or_no a).
-    - intro.
-      casse_if Blanc H0.
+    case col; simpl; case (bl_or_no a); intro H0.
+    - casse_if Blanc H0.
       case (eq_coord c a).
-      + intro. symmetry in e. contradiction.
-      + intro. simpl. rewrite H0. trivial.
-    - intro.
-      casse_if Noir H0.
+      + intro e. symmetry in e. contradiction.
+      + intro e. simpl. rewrite H0. trivial.
+    - casse_if Noir H0.
       apply odd_to_not_even in H0.
       rewrite H0.
       case (eq_coord c a0);
@@ -208,14 +202,12 @@ Proof.
         case (eq_coord c a);
           intro; trivial; simpl;
           casse_if Noir H0.
-    - intro.
-      casse_if Blanc H0.
+    - casse_if Blanc H0.
       apply even_to_not_odd in H0.
       rewrite H0.
       case (eq_coord c a); intro; trivial.
       + simpl. rewrite H0. trivial.
-    - intro.
-      casse_if Noir H0.
+    - casse_if Noir H0.
       apply odd_to_not_even in H0.
       simpl.
       case (eq_coord c a0); intro; simpl.
@@ -242,7 +234,7 @@ Qed.
     alors le nombre de cases blanches du plateau augmente de 1 *)
 Lemma cons_card col a p : couleur_case col a -> card col (a :: p) = card col p + 1.
 Proof.
-  intro.
+  intro H.
   destruct col.
   - casse_if Blanc H.
     rewrite Nat.add_1_r.
@@ -258,7 +250,7 @@ Lemma cons_card_neq col a p :
   couleur_case col a ->
   card (neg_couleur col) (a :: p) = card (neg_couleur col) p.
 Proof.
-  intro.
+  intro H.
   destruct col; simpl; unfold couleur_case in H;
   [ rewrite <- Nat.even_spec in H; apply even_to_not_odd in H
   | rewrite <- Nat.odd_spec  in H; apply odd_to_not_even in H ];
@@ -286,8 +278,8 @@ Lemma card_eq_hdS col a p p' :
   card col p + 1 = card col p' ->
   card col (a :: p) + 1 = card col (a :: p').
 Proof.
-  intro.
-  destruct col; case (bl_or_no a); intro.
+  intro H.
+  destruct col; case (bl_or_no a); intro H0.
     + rewrite (cons_card Blanc a p H0).
       rewrite (cons_card Blanc a p' H0).
       congruence.
@@ -326,9 +318,9 @@ Proof.
       apply Nat.even_spec in Bc.
       rewrite Bc.
       lia.
-    + case (eq_coord a a0). intro. contradiction.
-      intro. apply diff_sym in H.
-      case (bl_or_no a0); intro.
+    + case (eq_coord a a0). intro e. contradiction.
+      intro n. apply diff_sym in H.
+      case (bl_or_no a0); intro H0.
       - rewrite (cons_card Blanc a0 p H0).
         rewrite <- IHp; trivial.
         * rewrite Nat.add_1_r, Nat.add_1_r.
@@ -362,9 +354,9 @@ Proof.
       apply Nat.odd_spec in Bc.
       rewrite Bc.
       lia.
-    + case (eq_coord a a0). intro. contradiction.
-      intro. apply diff_sym in H.
-      case (bl_or_no a0); intro.
+    + case (eq_coord a a0). intro e. contradiction.
+      intro n. apply diff_sym in H.
+      case (bl_or_no a0); intro H0.
       - rewrite <- (rw_util Noir a0 a p H).
         rewrite (card_eq_hdS Noir a0 (remove eq_coord a p) p).
         * reflexivity.
@@ -402,7 +394,7 @@ Proof.
   { auto. }
   { intro H.
     simpl.
-    case (eq_coord a a0); intro.
+    case (eq_coord a a0); intro e.
     - rewrite IHp; trivial.
       rewrite e in H.
       unfold case_noire in H.
@@ -432,7 +424,7 @@ Proof.
   { auto. }
   { intro H.
     simpl.
-    case (eq_coord a a0); intro.
+    case (eq_coord a a0); intro e.
     - rewrite IHp; trivial.
       rewrite e in H.
       unfold case_blanche in H.
@@ -457,37 +449,38 @@ Hint Resolve retire_case_neg2 : lemmas_hints.
 Lemma remove_comm (p : plateau) (a b : coord) : p \ a \ b = p \ b \ a.
 Proof.
   case (eq_coord a b).
-  { intro. rewrite e. reflexivity. }
-  { intro.
+  { intro e. rewrite e. reflexivity. }
+  { intro n.
     induction p; trivial.
     case (eq_coord a a0).
-    { intro.
+    { intro e.
       rewrite e.
       simpl.
       case (eq_coord a0 a0).
-      - intro.
+      - intro e0.
         case (eq_coord b a0).
-        + intro. rewrite e1. reflexivity.
-        + intro. rewrite <- e, IHp.
+        + intro e1. rewrite e1. reflexivity.
+        + intro e1. rewrite <- e, IHp.
           simpl. case (eq_coord a a).
           * trivial.
-          * intro. contradiction.
-      - intro. contradiction. }
-    { intro. simpl.
+          * now contradiction.
+      - now contradiction. }
+    { intro n0. simpl.
       case (eq_coord a a0).
-      - intro. contradiction.
-      - intro.
+      - now contradiction.
+      - intro n1.
         case (eq_coord b a0).
-        + intro. rewrite e. simpl.
+        + intro e. rewrite e. simpl.
           case (eq_coord a0 a0).
-          * intro. rewrite <- e. trivial.
-          * intro. contradiction.
-        + intro. simpl.
+          * intro e0. rewrite <- e. trivial.
+          * now contradiction.
+        + intro n2. simpl.
           case (eq_coord b a0).
-          ++ intro. contradiction.
-          ++ intro. case (eq_coord a a0).
-            * intro. contradiction.
-            * intro. rewrite IHp. trivial. } }
+          * now contradiction.
+          * intro n3. case (eq_coord a a0).
+             now contradiction.
+             now rewrite IHp. }
+  }
 Qed.
 
 (** raccourci *)
@@ -559,14 +552,12 @@ Qed.
 Lemma case_diff_dessous : forall c, c <> dessous c.
 Proof.
   intros c H.
-  case (bl_or_no c).
-  + intro.
-    assert (Hcp : couleur_case Blanc c); trivial.
+  case (bl_or_no c); intro H0.
+  + assert (Hcp : couleur_case Blanc c); trivial.
     apply dessous_inv_col in H0.
     rewrite <- H in H0.
     eapply bl_no_false_g with c Blanc; assumption.
-  + intro.
-    assert (H0cp : couleur_case Noir c); trivial.
+  + assert (H0cp : couleur_case Noir c); trivial.
     apply dessous_inv_col in H0.
     rewrite <- H in H0.
     eapply bl_no_false_g with c Noir; assumption.
@@ -576,14 +567,12 @@ Qed.
 Lemma case_diff_droite : forall c, c <> droite c.
 Proof.
   intros c H.
-  case (bl_or_no c).
-  + intro.
-    assert (Hcp : couleur_case Blanc c); trivial.
+  case (bl_or_no c); intro H0.
+  + assert (Hcp : couleur_case Blanc c); trivial.
     apply droite_inv_col in H0.
     rewrite <- H in H0.
     eapply bl_no_false_g with c Blanc; assumption.
-  + intro.
-    assert (H0cp : couleur_case Noir c); trivial.
+  + assert (H0cp : couleur_case Noir c); trivial.
     apply droite_inv_col in H0.
     rewrite <- H in H0.
     eapply bl_no_false_g with c Noir; assumption.
@@ -593,9 +582,9 @@ Qed.
     si [c] est dans [p] alors [c] est dans [p \ (droite c)]*)
 Lemma in_simp2_droite c p : In c p -> In c (p \ droite c).
 Proof.
-  intro.
+  intro H.
   apply List.in_in_remove.
-  - intro.
+  - intro H1.
     eapply case_diff_droite with c.
     assumption.
   - assumption.
@@ -605,9 +594,9 @@ Qed.
     si [c] est dans [p] alors [c] est dans [p \ (dessous c)]*)
 Lemma in_simp2 c p : In c p -> In c (p \ dessous c).
 Proof.
-  intro.
+  intro H.
   apply List.in_in_remove.
-  - intro.
+  - intro H1.
     eapply case_diff_dessous with c.
     assumption.
   - assumption.
@@ -617,9 +606,9 @@ Qed.
     si [droite c] est dans [p] alors [droite c] est dans [p \ c]*)
 Lemma in_simp_droite c p : In (droite c) p -> In (droite c) (p \ c).
 Proof.
-  intro.
+  intro H.
   apply List.in_in_remove.
-  - intro.
+  - intro H1.
     eapply case_diff_droite with c.
     symmetry.
     assumption.
@@ -630,9 +619,9 @@ Qed.
     si [dessous c] est dans [p] alors [dessous c] est dans [p \ c]*)
 Lemma in_simp c p : In (dessous c) p -> In (dessous c) (p \ c).
 Proof.
-  intro.
+  intro H.
   apply List.in_in_remove.
-  - intro.
+  - intro H1.
     eapply case_diff_dessous with c.
     symmetry.
     assumption.
@@ -761,9 +750,9 @@ Lemma write : forall d1 d2, d1 # d2 ->
       droite c1 <> dessous c2
   end.
 Proof.
-  intros.
+  intros d1 d2 H.
   case d1, d2;
-  unfold disjoints_dominos in H;
+  unfold disjoints2_dominos in H;
   destruct H;
   destruct H0;
   destruct H1;
@@ -784,11 +773,11 @@ Proof.
   case (eq_domino d1 d2).
   - intro eqH. rewrite eqH. auto.
   - intro neqH.
-    intros.
+    intros p H.
     destruct d1, d2;
     unfold pose_domino;
     simpl;
-    unfold disjoints_dominos in H;
+    unfold disjoints2_dominos in H;
     induction p;
     try (simpl; reflexivity).
     * rewrite <- (remove_comm ((a :: p)\c) c0 (dessous c)).
@@ -839,9 +828,9 @@ Qed.
 
 Lemma disj_lemma3 : forall d1 d2, d1 # d2 -> d2 # d1.
 Proof.
-  intros.
+  intros d1 d2 H.
   destruct d1, d2;
-  unfold disjoints_dominos in *;
+  unfold disjoints2_dominos in *;
   intuition.
 Qed.
 
@@ -1007,7 +996,7 @@ Qed.
 Lemma rm_add_b :
   forall p col dl,
   well_formed p ->
-  (disjoints_dominos_lo dl) ->
+  (disjoints_dominos dl) ->
   card col p = card col (pose_dominos dl p) + length dl.
 Proof.
   induction dl.
@@ -1027,7 +1016,7 @@ Proof.
       apply (wf_minus_dl p wfp).
     + lia.
     + assumption.
-    + apply (simp_disjlo1 a). assumption.
-    + apply (simp_disjlo2 a). assumption.
+    + now apply (simp_disjlo1 a).
+    + now apply (simp_disjlo2 a).
   }
 Qed.

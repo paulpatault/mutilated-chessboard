@@ -51,7 +51,7 @@ Qed.
 Lemma invariant_extended_to_dominolist :
   forall p p' dl,
   well_formed p ->
-  disjoints_dominos_lo dl ->
+  disjoints_dominos dl ->
   pose_dominos dl p = p' ->
   card Blanc p = card Blanc p' + (List.length dl) /\
   card Noir p = card Noir p' + (List.length dl).
@@ -100,7 +100,7 @@ Qed.
 (** Le plateau amputé n'a pas de solution ! *)
 Corollary mutilated_board : ~ resoluble plateau_coupe.
 Proof.
-  intro.
+  intro H.
   apply resoluble_invariant in H.
   rewrite card_coupe in H.
   lia.

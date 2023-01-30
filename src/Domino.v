@@ -118,9 +118,9 @@ Defined.
 Lemma eq_rw {P}:
   forall a (x y : P), (if eq_coord a a then x else y) = x.
 Proof.
-  intros.
+  intros a y0 x0.
   case (eq_coord a a).
-  intros.
+  intro eq.
   trivial.
   contradiction.
 Qed.
@@ -128,22 +128,22 @@ Qed.
 Lemma eq_rw2 {P}:
   forall a b (x y : P), a <> b -> (if eq_coord a b then x else y) = y.
 Proof.
-  intros.
+  intros a b x0 y0 H.
   case (eq_coord a b).
   - contradiction.
-  - intro. trivial.
+  - trivial.
 Qed.
 
 (** l'égalité entre dominos est décidable *)
 Lemma eq_domino : forall a b : domino, {a = b} + {a <> b}.
 Proof.
-  intros.
+  intros a b.
   destruct a, b.
   - case (eq_coord c c0); intro e.
     + rewrite e. left. trivial.
     + decide equality; apply eq_coord.
-  - right. intro. discriminate.
-  - right. intro. discriminate.
+  - right. discriminate.
+  - right. discriminate.
   - case (eq_coord c c0); intro e.
     + rewrite e. left. trivial.
     + decide equality; apply eq_coord.
@@ -172,16 +172,6 @@ Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
 
 Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p).
-
-Hypothesis rm_iff_mem2 : forall p p' c, p' = p \ c -> In c p.
-(* Proof.
-  intros p p' d.
-  destruct d; unfold pose_domino; simpl; intro.
-  revert p p'.
-  -
-  simpl.
-  intros. *)
-
 
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.
 Definition mk_domino_L (x y : nat) := Largeur {| x := x ; y := y |}.
