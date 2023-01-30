@@ -3,6 +3,17 @@
 Projet du cours de preuves Coq ([lien](https://master.math.univ-paris-diderot.fr/modules/m2lmfi-preuveform/))
 du master [LMFI](https://master.math.univ-paris-diderot.fr/annee/m2-lmfi/).
 
+## Sommaire du README
+
+- [Compilation](https://github.com/paulpatault/mutilated-chessboard#Compilation)
+- [Problème](https://github.com/paulpatault/mutilated-chessboard#Problème)
+- [Formalisation](https://github.com/paulpatault/mutilated-chessboard#Formalisation)
+- [Lemmes importants](https://github.com/paulpatault/mutilated-chessboard#Lemmes-importants)
+- [Définitions](https://github.com/paulpatault/mutilated-chessboard#Definitions)
+- [Résultat principal](https://github.com/paulpatault/mutilated-chessboard#Résultat-principal)
+- [Améliorations possibles](https://github.com/paulpatault/mutilated-chessboard#Améliorations-possibles)
+
+
 ### Compilation
 ```bash
 $ make _CoqProject
