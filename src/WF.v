@@ -293,7 +293,7 @@ Proof.
            ++ auto. }
 Qed.
 
-Lemma sublemma : forall d p, well_formed p -> sublist (pose_domino d p) p.
+Lemma sublemma : forall d p, well_formed p -> sublist (d // p) p.
 Proof.
   destruct d; intros; unfold pose_domino; simpl.
   { set (H1 := sub_cor p c).
@@ -313,17 +313,16 @@ Proof.
 Qed.
 
 Lemma wf_minus_d :
-  forall p, well_formed p -> forall d, well_formed (pose_domino d p).
+  forall p, well_formed p -> forall d, well_formed (d // p).
 Proof.
   intros p H d.
-  cut (sublist (pose_domino d p) p).
+  cut (sublist (d // p) p).
   + now apply wf_minus_ll.
   + now apply sublemma.
 Qed.
 
 Lemma rw12 : forall dl a p,
-  (fold_left (fun (p0 : plateau) (d : domino) => pose_domino d p0) dl
-     (pose_domino a p)) = pose_dominos dl (pose_domino a p).
+  (fold_left (fun (p0 : plateau) (d : domino) => d // p0) dl (a // p)) = pose_dominos dl (a // p).
 Proof.
   reflexivity.
 Qed.
@@ -340,7 +339,7 @@ Proof.
   unfold well_formed.
   simpl.
   rewrite rw12.
-  apply (IHdl (pose_domino a p)).
+  apply (IHdl (a // p)).
   eapply wf_minus_d.
   assumption.
 Qed.

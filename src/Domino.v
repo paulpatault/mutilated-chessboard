@@ -121,8 +121,8 @@ Proof.
   intros a y0 x0.
   case (eq_coord a a).
   intro eq.
-  trivial.
-  contradiction.
+  - trivial.
+  - contradiction.
 Qed.
 
 Lemma eq_rw2 {P}:
@@ -162,15 +162,17 @@ Definition plateau_coupe := plateau_base \ {| x := 7; y := 7|} \ {| x := 0; y :=
 Definition pose_domino (d : domino) (p : plateau) : plateau :=
   p \ fst (case_prise d) \ snd (case_prise d).
 
+Infix "//" := pose_domino (at level 29, right associativity).
+
 (** itérations consécutives de la fonction précédante *)
 Definition pose_dominos (dl : list domino) (p_init : plateau) : plateau :=
-  fold_left (fun (p : plateau) (d : domino) => pose_domino d p) dl p_init.
+  fold_left (fun (p : plateau) (d : domino) => d // p) dl p_init.
 
 (** hyp : si l'on a un [p'] tq [p' = pose_domino d p]
           alors c'est que les cases prisent par le domino
           étaient présentes dans [p] *)
 
-Hypothesis rm_iff_mem : forall p p' d, p' = pose_domino d p ->
+Hypothesis rm_iff_mem : forall p p' d, p' = d // p ->
   (In (fst (case_prise d)) p /\ In (snd (case_prise d)) p).
 
 Definition mk_domino_H (x y : nat) := Hauteur {| x := x ; y := y |}.

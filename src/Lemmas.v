@@ -497,7 +497,7 @@ Ltac apply_lemmas cp h f :=
  *)
 Lemma invariant_blanc : forall p p': plateau, forall d: domino,
   well_formed p ->
-  p' = pose_domino d p ->
+  p' = d // p ->
   card Blanc p = card Blanc p' + 1.
 Proof.
   intros p p' d wfp H.
@@ -652,7 +652,7 @@ Ltac apply_lemmas_l cp h f :=
  *)
 Lemma invariant_noir : forall p p': plateau, forall d: domino,
   well_formed p ->
-  p' = pose_domino d p ->
+  p' = d // p ->
   card Noir p  = card Noir  p' + 1.
 Proof.
   intros p p' d wfp H.
@@ -698,7 +698,7 @@ Qed.
 (** combinaison des deux lemmes importants que l'on vient de définir *)
 Lemma invariant : forall p p': plateau, forall d: domino,
   well_formed p ->
-  p' = pose_domino d p ->
+  p' = d // p ->
   card Blanc p = card Blanc p' + 1 /\
   card Noir p  = card Noir  p' + 1.
 Proof.
@@ -708,7 +708,7 @@ Proof.
   - apply (invariant_noir p p' d);  assumption.
 Qed.
 
-Lemma rw_util3 : forall d a p, pose_dominos d (pose_domino a p) = pose_dominos (a::d) p.
+Lemma rw_util3 : forall d a p, pose_dominos d (a // p) = pose_dominos (a::d) p.
 Proof.
   simpl.
   reflexivity.
@@ -724,12 +724,12 @@ Qed.
 
 Lemma pose_domino_dont_change_card : forall d p,
   well_formed p ->
-  card_no (pose_domino d p) = card_bl (pose_domino d p) ->
+  card_no (d // p) = card_bl (d // p) ->
   card_no p = card_bl p.
 Proof.
   intros d p wfp.
-  set (p' := pose_domino d p).
-  assert (p' = pose_domino d p). auto.
+  set (p' := d // p).
+  assert (p' = d // p). auto.
   set (H1 := invariant p p' d wfp H).
   destruct H1.
   simpl in H0, H1.
@@ -766,7 +766,7 @@ Hint Resolve remove_comm : lemmas_hints.
 Lemma pose_domino_comm :
   forall p d1 d2,
   d1 # d2 ->
-  pose_domino d1 (pose_domino d2 p) = pose_domino d2 (pose_domino d1 p).
+  d1 // (d2 // p) = d2 // d1 // p.
 Proof.
   intros p d1 d2.
   revert p.
@@ -846,7 +846,7 @@ Proof.
     intro p.
     simpl.
     rewrite pose_domino_comm.
-    set (pa := pose_domino a p).
+    set (pa := a // p).
     apply IHdl.
     -
       (* induction dl; simpl; auto. *)
@@ -869,7 +869,7 @@ Qed.
 (** poser un domino [d] puis la liste [dl]
     est équivalent à poser [dl] puis [d]    *)
 Lemma rw_util4 :
-  forall p dl d, d ## dl -> pose_dominos (d::dl) p = pose_domino d (pose_dominos dl p).
+  forall p dl d, d ## dl -> pose_dominos (d::dl) p = d // (pose_dominos dl p).
 Proof.
   intros p dl d H.
   rewrite (rw_util4_for4 p dl d).
@@ -896,10 +896,10 @@ Qed.
                mais je n'ai pas réussi à les factoriser *)
 Lemma retire_domino : forall p d col,
   well_formed p ->
-  card col p = S (card col (pose_domino d p)).
+  card col p = S (card col (d // p)).
 Proof.
   intros p d col wfp.
-  pose (H := Domino.rm_iff_mem p (pose_domino d p) d eq_refl).
+  pose (H := Domino.rm_iff_mem p (d // p) d eq_refl).
   destruct H as (H1 & H2).
   case_eq d;
       intros c rw_d;
