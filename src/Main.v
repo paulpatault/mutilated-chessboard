@@ -65,11 +65,10 @@ Proof.
     case (bl_or_no c);
     intro col;
     rewrite H;
-    try (apply (rm_add_b p Blanc (Hauteur c :: dl)));
-    try (apply (rm_add_b p Noir  (Hauteur c :: dl)));
-    try (apply (rm_add_b p Blanc (Largeur c :: dl)));
-    try (apply (rm_add_b p Noir  (Largeur c :: dl)));
-    assumption.
+    try (now apply (rm_add_b p Blanc (Hauteur c :: dl)));
+    try (now apply (rm_add_b p Noir  (Hauteur c :: dl)));
+    try (now apply (rm_add_b p Blanc (Largeur c :: dl)));
+    try (now apply (rm_add_b p Noir  (Largeur c :: dl))).
   }
 Qed.
 
@@ -93,7 +92,7 @@ Proof.
     assumption.
     apply simp_disjlo1 in H0.
     - apply (wf_minus_d p wf a).
-    - destruct H0. assumption.
+    - now destruct H0.
   }
 Qed.
 

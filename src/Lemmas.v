@@ -21,12 +21,10 @@ Proof.
     rewrite Nat.add_1_r.
     - apply Nat.odd_spec.
       rewrite Nat.odd_succ.
-      apply Nat.even_spec.
-      assumption.
+      now apply Nat.even_spec.
     - apply Nat.even_spec.
       rewrite Nat.even_succ.
-      apply Nat.odd_spec.
-      assumption.
+      now apply Nat.odd_spec.
   }
   { case col;
     unfold couleur_case;
@@ -36,12 +34,10 @@ Proof.
     rewrite Nat.add_1_r in H.
     - apply Nat.odd_spec in H.
       rewrite Nat.odd_succ in H.
-      apply Nat.even_spec.
-      assumption.
+      now apply Nat.even_spec.
     - apply Nat.even_spec in H.
       rewrite Nat.even_succ in H.
-      apply Nat.odd_spec.
-      assumption.
+      now apply Nat.odd_spec.
   }
 Qed.
 
@@ -112,8 +108,8 @@ Lemma bl_no_false_g :
 Proof.
   intros c col H2 H3.
   destruct col;
-   simpl in *;
-    apply (Nat.Even_Odd_False (x c + y c)); assumption.
+  simpl in *;
+  apply (Nat.Even_Odd_False (x c + y c)); assumption.
 Qed.
 
 (** si [n] est pair, alors [n] n'est pas impair (dans Bool) *)
@@ -880,7 +876,7 @@ Proof.
     intro p.
     apply IHdl.
     induction dl.
-    - simpl. auto.
+    - now simpl.
     - simpl.
       try (unfold disjoints_dominos_l in H;
         destruct H;

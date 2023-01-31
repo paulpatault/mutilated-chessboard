@@ -3,26 +3,40 @@
 Projet du cours de preuves Coq ([lien](https://master.math.univ-paris-diderot.fr/modules/m2lmfi-preuveform/))
 du master [LMFI](https://master.math.univ-paris-diderot.fr/annee/m2-lmfi/).
 
+### Problème
+
+- Question : Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés ?
+- Réponse : Non c'est impossible !
+
 ## Sommaire du README
 
-- [Compilation](https://github.com/paulpatault/mutilated-chessboard#Compilation)
 - [Problème](https://github.com/paulpatault/mutilated-chessboard#Problème)
+- [Compilation](https://github.com/paulpatault/mutilated-chessboard#Compilation)
+- [Organisation des fichiers](https://github.com/paulpatault/mutilated-chessboard#Organisation-des-fichiers)
 - [Formalisation](https://github.com/paulpatault/mutilated-chessboard#Formalisation)
 - [Lemmes importants](https://github.com/paulpatault/mutilated-chessboard#Lemmes-importants)
 - [Définitions](https://github.com/paulpatault/mutilated-chessboard#Definitions)
 - [Résultat principal](https://github.com/paulpatault/mutilated-chessboard#Résultat-principal)
 - [Améliorations possibles](https://github.com/paulpatault/mutilated-chessboard#Améliorations-possibles)
 
-
 ### Compilation
 ```bash
 $ make _CoqProject
 $ make -j4
 ```
-### Problème
 
-- Question : Peut-on paver avec des dominos `2x1` un échiquier `8x8` amputé de deux coins opposés ?
-- Réponse : Non c'est impossible !
+### Organisation des fichiers
+
+Dans l'ordre de compilation :
+
+- [Arith aux](./src/Arith_aux.v) : lemme arithmétique
+- [Domino](./src/Domino.v) : définitions principales pour la formalisation du problème
+- [Disjoint](./src/Disjoint.v) : définitions et lemmes relatifs à la propriété `disjoints`
+- [WF](./src/WF.v) : définitions et lemmes relatifs à la propriété `well_formed`
+- [Resoluble](./src/Resoluble.v) : définitions de ce qu'est qu'être `résoluble`
+- [Lemmas](./src/Lemmas.v) : lemmes utiles pour prouver le théorème final
+- [Main](./src/Main.v) : énoncé principal
+
 
 ### Formalisation
 
